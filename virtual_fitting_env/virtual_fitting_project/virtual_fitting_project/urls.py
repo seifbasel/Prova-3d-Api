@@ -7,17 +7,13 @@ from back_api.views import (
     CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView,
     PaymentListCreateAPIView, PaymentRetrieveUpdateDestroyAPIView,
     ProductListCreateAPIView, ProductRetrieveUpdateDestroyAPIView,ProductByCategoryAPIView,
-    UserListCreateAPIView, UserRetrieveUpdateDestroyAPIView
+    UserListCreateAPIView, UserRetrieveUpdateDestroyAPIView ,
 )
-from back_api.views import CustomUserViewSet
-# user_login,register_user
-# ,UserLoginAPIView, UserRegistrationAPIView ,
+from back_api.views import SignupViewSet ,LoginViewSet
 from rest_framework.routers import DefaultRouter
 
-router = DefaultRouter()
-# router.register(r'users', CustomUserViewSet, basename='users')
-# router.register(r'users', CustomUserViewSet)
-# router.register(r'admin-profiles', AdminProfileViewSet)
+# router = DefaultRouter()
+# router.register(r'users', UserListCreateAPIView)
 # router.register(r'products', ProductListCreateAPIView)
 # router.register(r'carts', CartListCreateAPIView)
 # router.register(r'cart-items', CartItemListCreateAPIView)
@@ -29,8 +25,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # path('register/', register_user, name='user-register'),
     # path('login/', user_login, name='user-login'),
-    path('login/', CustomUserViewSet.as_view({'post': 'login'}), name='user-login'),
-    path('signup/', CustomUserViewSet.as_view({'post': 'signup'}), name='user-signup'),
+    # path('login/', CustomUserViewSet.as_view({'post': 'login'}), name='user-login'),
+    # path('signup/', CustomUserViewSet.as_view({'post': 'signup'}), name='user-signup'),
+    path('signup/', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
+    path('login/', LoginViewSet.as_view({'post': 'login'}), name='user-login'),
+    # path('forgot-password/', forgot_password, name='forgot_password'),
+    # path('reset-password/<str:uidb64>/<str:token>/', reset_password, name='reset_password'),
     path('users/', UserListCreateAPIView.as_view(), name='user-list-create'),
     path('users/<int:pk>/', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-detail'),
     path('categories/', CategoryListCreateAPIView.as_view(), name='category-list-create'),

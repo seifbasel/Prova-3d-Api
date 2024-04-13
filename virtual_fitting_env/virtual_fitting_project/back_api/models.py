@@ -1,11 +1,9 @@
-from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User
 from django.db import models
 
 
-
-class CustomUser(AbstractUser):
-    # Your custom fields here
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15)
     address = models.TextField() 
     GENDER_CHOICES = (
@@ -13,29 +11,15 @@ class CustomUser(AbstractUser):
         ('F', 'Female'),
     )
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-
-    # Specify unique related_name arguments to avoid clashes
-    groups = models.ManyToManyField('auth.Group', related_name='custom_user_groups')
-    user_permissions = models.ManyToManyField('auth.Permission', related_name='custom_user_permissions')
-
     def __str__(self):
-        return self.username
+        return str(self.user)
 
-
-class AdminProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
-    contact_number = models.CharField(max_length=20)
-    role = models.CharField(max_length=50)
-
-    def __str__(self):
-        return f"Admin Profile for {self.user.username}"
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
@@ -53,7 +37,9 @@ class Product(models.Model):
 
 
 class Cart(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    def __str__(self):
+        return str(self.user)+' '+'cart'
     # Consider removing the one-to-one constraint and adding additional fields as needed
 
 
@@ -64,10 +50,14 @@ class CartItem(models.Model):
 
     class Meta:
         unique_together = ['cart', 'product']  # Ensure each product is added to the cart only once
+    
+    def __str__(self):
+        return str(self.cart)+' '+'items'
+
 
 
 class Payment(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3)
     transaction_id = models.CharField(max_length=100)

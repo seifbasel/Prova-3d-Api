@@ -1,40 +1,70 @@
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.response import Response
-from .models import CustomUser, Category, Product, Cart, CartItem, Payment
-from .serializers import CustomUserSerializer, CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, PaymentSerializer
-
-# User Endpoints
-# views.py
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework import fields, serializers, viewsets
-
+from django.contrib.auth import authenticate, get_user_model
+from django.db import IntegrityError
+from rest_framework import generics, status, viewsets
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
 from rest_framework.decorators import action
-from .serializers import CustomUserSerializer
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from .models import UserProfile, Category, Product, Cart, CartItem, Payment
+from .serializers import UserProfileSerializer, CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, PaymentSerializer
+from django.contrib.auth import get_user_model
+from .serializers import UserProfileSerializer
 
 
-# login and signup 
-class CustomUserViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
-
+class SignupViewSet(viewsets.ViewSet):
+    """
+    View set to handle user signup.
+    """
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def signup(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """
+        Create a new user and generate a token.
 
+        Parameters:
+        - username: The username of the new user.
+        - email: The email of the new user.
+        - password: The password of the new user.
+
+        Returns:
+        - A response indicating success or failure of the signup process.
+        """
+        User = get_user_model()
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not all([username, email, password]):
+            return Response({'error': 'Username, email, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            token, _ = Token.objects.get_or_create(user=user)  # Generate token
+            return Response({'message': 'User registered successfully', 'token': token.key}, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginViewSet(viewsets.ViewSet):
+    """
+    View set to handle user login.
+    """
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
+        """
+        Authenticate a user and generate an authentication token.
+
+        Parameters:
+        - username: The username of the user.
+        - password: The password of the user.
+
+        Returns:
+        - A response containing an authentication token if authentication succeeds, or an error message if authentication fails.
+        """
         username = request.data.get('username')
         password = request.data.get('password')
+
+        if not all([username, password]):
+            return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = authenticate(username=username, password=password)
 
@@ -45,45 +75,6 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def register_user(request):
-#     if request.method == 'POST':
-#         serializer = CustomUserSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def user_login(request):
-#     if request.method == 'POST':
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-
-#         user = authenticate(username=username, password=password)
-
-#         if user:
-#             token, _ = Token.objects.get_or_create(user=user)
-#             return Response({'token': token.key}, status=status.HTTP_200_OK)
-#         else:
-#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-# get products of category
-from rest_framework import generics
-from .models import Product
-from .serializers import ProductSerializer
-
-class ProductByCategoryAPIView(generics.ListAPIView):
-    serializer_class = ProductSerializer
-
-    def get_queryset(self):
-        category_name = self.kwargs['category_name']  # assuming category name is passed in URL
-        queryset = Product.objects.filter(category__name=category_name)
-        return queryset
-
 
 class UserListCreateAPIView(generics.ListCreateAPIView):
     """
@@ -92,8 +83,8 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     GET: Retrieve a list of all users.
     POST: Create a new user.
     """
-    queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
 
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -104,8 +95,8 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     PATCH: Partially update a user by ID.
     DELETE: Delete a user by ID.
     """
-    queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
 
 # Category Endpoints
 
@@ -133,6 +124,17 @@ class CategoryRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
 # Product Endpoints
 
+# get products of category
+class ProductByCategoryAPIView(generics.ListAPIView):
+    ''' get the products of a category by the name of category'''
+
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        category_name = self.kwargs['category_name']  # assuming category name is passed in URL
+        queryset = Product.objects.filter(category__name=category_name)
+        return queryset
+    
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all products or create a new product.

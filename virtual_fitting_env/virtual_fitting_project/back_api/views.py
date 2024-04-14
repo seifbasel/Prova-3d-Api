@@ -4,12 +4,13 @@ from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import UserProfile, Category, Product, Cart, CartItem, Payment
 from .serializers import UserProfileSerializer, CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, PaymentSerializer
 from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import UserProfileSerializer
+
 
 
 class SignupViewSet(viewsets.ViewSet):
@@ -77,6 +78,7 @@ class LoginViewSet(viewsets.ViewSet):
 
 
 
+
 class UserListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all users or create a new user.
@@ -110,6 +112,8 @@ class CategoryListCreateAPIView(generics.ListCreateAPIView):
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]  # Only authenticated users can access this view
+
 
 class CategoryRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -122,6 +126,8 @@ class CategoryRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]  # Only authenticated users can access this view
+
 
 # Product Endpoints
 
@@ -130,7 +136,6 @@ class ProductByCategoryAPIView(generics.ListAPIView):
     ''' get the products of a category by the name of category'''
 
     serializer_class = ProductSerializer
-
     def get_queryset(self):
         category_name = self.kwargs['category_name']  # assuming category name is passed in URL
         queryset = Product.objects.filter(category__name=category_name)

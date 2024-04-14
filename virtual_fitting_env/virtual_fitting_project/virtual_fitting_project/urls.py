@@ -23,10 +23,6 @@ from rest_framework.routers import DefaultRouter
 urlpatterns = [
     # path('', include(router.urls)),
     path('admin/', admin.site.urls),
-    # path('register/', register_user, name='user-register'),
-    # path('login/', user_login, name='user-login'),
-    # path('login/', CustomUserViewSet.as_view({'post': 'login'}), name='user-login'),
-    # path('signup/', CustomUserViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('signup/', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('login/', LoginViewSet.as_view({'post': 'login'}), name='user-login'),
     # path('forgot-password/', forgot_password, name='forgot_password'),

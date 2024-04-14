@@ -1,6 +1,4 @@
 # serializers.py
-from rest_framework import serializers
-from .models import UserProfile, Category, Product, Cart, CartItem, Payment
 from rest_framework import  serializers, viewsets
 from .models import UserProfile, Category, Product, Cart, CartItem, Payment
 

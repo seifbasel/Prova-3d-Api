@@ -46,14 +46,12 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.IntegerField(default=1)
 
     class Meta:
         unique_together = ['cart', 'product']  # Ensure each product is added to the cart only once
     
     def __str__(self):
-        return str(self.cart)+' '+'items'
-
+        return f"{self.product.name}"
 
 
 class Payment(models.Model):

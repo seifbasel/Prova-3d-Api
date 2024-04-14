@@ -21,10 +21,29 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+from rest_framework import serializers
+from .models import CartItem, Product
+
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
-        fields = '__all__'
+        fields = ['id', 'cart', 'product', 'quantity']
+        
+    def validate_quantity(self, value):
+        """
+        Validate that the quantity does not exceed the available quantity of the product.
+        """
+        product_id = self.initial_data.get('product')
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            raise serializers.ValidationError("Invalid product")
+
+        if value > product.quantity:
+            raise serializers.ValidationError(f"Quantity exceeds available quantity ({product.quantity})")
+
+        return value
+
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)

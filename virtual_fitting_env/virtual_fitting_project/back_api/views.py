@@ -1,3 +1,4 @@
+# views.py
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
@@ -192,6 +193,8 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
+
+
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """

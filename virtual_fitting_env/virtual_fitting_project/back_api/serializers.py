@@ -1,11 +1,12 @@
 # serializers.py
-from rest_framework import  serializers, viewsets
-from .models import UserProfile, Category, Product, Cart, CartItem, Payment
+from rest_framework import  serializers
+from .models import UserProfile, Category, Product, Cart, CartItem, Payment ,Favorite
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['id', 'user', 'phone_number', 'address', 'gender']
+        fields = ['id','user','phone_number','address']
         read_only_fields = ['user']
 
 
@@ -14,18 +15,23 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+    
 
-from rest_framework import serializers
-from .models import CartItem, Product
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ['id', 'user', 'product', 'created_at']  # Adjust fields as needed
+
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
-        fields = ['id', 'cart', 'product', 'quantity']
+        fields = ['id', 'cart', 'product']
         
     def validate_quantity(self, value):
         """
@@ -49,6 +55,7 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = '__all__'
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:

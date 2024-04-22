@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -12,13 +11,6 @@ class UserProfile(models.Model):
     address = models.TextField() 
     def __str__(self):
         return str(self.user)
-
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
 
 
 class Category(models.Model):
@@ -64,7 +56,6 @@ class Cart(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.user)+' '+'cart'
-    # Consider removing the one-to-one constraint and adding additional fields as needed
 
 
 class CartItem(models.Model):
@@ -78,13 +69,17 @@ class CartItem(models.Model):
         return f"{self.product.name}"
 
 
-class Payment(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3)
-    transaction_id = models.CharField(max_length=100)
-    status = models.CharField(max_length=20)
-    created_at = models.DateTimeField(auto_now_add=True)
+# receivers
+@receiver(post_save, sender=get_user_model())
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
 
-    def __str__(self):
-        return f"Payment #{self.id} - {self.amount} {self.currency} ({self.status})"
+@receiver(post_save, sender=UserProfile)
+def create_cart_for_user_profile(sender, instance, created, **kwargs):
+    """
+    Signal handler to create a cart for a user profile when it is created.
+    """
+    if created:
+        # Create a cart for the user profile
+        Cart.objects.create(user=instance)

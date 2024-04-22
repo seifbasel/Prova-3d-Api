@@ -1,17 +1,13 @@
 # urls.py
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
 from back_api.views import (
-    CartItemListCreateAPIView, CartItemRetrieveUpdateDestroyAPIView,
-    CartListCreateAPIView, CartRetrieveUpdateDestroyAPIView,
-    CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView,
-    PaymentListCreateAPIView, PaymentRetrieveUpdateDestroyAPIView,
-    ProductListCreateAPIView, ProductRetrieveUpdateDestroyAPIView,
-    ProductByCategoryAPIView,UserListCreateAPIView, 
-    UserRetrieveUpdateDestroyAPIView ,FavoriteListCreateAPIView,
+    # CartItemListCreateAPIView,
+      CartItemRetrieveUpdateDestroyAPIView,
+    CategoryListCreateAPIView,CartItemCreateAPIView,
+    ProductListCreateAPIView,ProductByCategoryAPIView,
+    UserProfileRetrieveUpdateAPIView,FavoriteListCreateAPIView,
     FavoriteRetrieveUpdateDestroyAPIView
-    # ,UserProfileInfoAPIView
-
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -19,7 +15,7 @@ from rest_framework_simplejwt.views import (
 )
 from back_api.views import LogoutViewSet ,SignupViewSet ,LoginViewSet
 from rest_framework.routers import DefaultRouter
-# from back_api.views import SignupAPIView, LoginAPIView, CustomTokenObtainPairView
+from back_api.views import PasswordResetAPIView, PasswordResetConfirmAPIView
 
 # router = DefaultRouter()
 # router.register(r'users', UserListCreateAPIView)
@@ -36,31 +32,23 @@ urlpatterns = [
     # path('', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    # path('signup/', SignupAPIView.as_view(), name='signup'),
-    # path('login/', LoginAPIView.as_view(), name='login'),
     # path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('admin/', admin.site.urls),
     path('signup/', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('login/', LoginViewSet.as_view({'post': 'login'}), name='user-login'),
-    # path('logout/', LogoutViewSet.as_view(), name='user-logout'),
-    # path('forgot-password/', forgot_password, name='forgot_password'),
-    # path('reset-password/<str:uidb64>/<str:token>/', reset_password, name='reset_password'),
-    # path('user/info/', UserProfileInfoAPIView.as_view(), name='user-info'),
-    path('users/', UserListCreateAPIView.as_view(), name='user-list-create'),
-    # path('users/<int:pk>/', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-detail'),
+    path('logout/', LogoutViewSet.as_view({'post': 'logout'}), name='logout'),
+    path('password/reset/', PasswordResetAPIView.as_view(), name='password_reset'),
+    path('password/reset/confirm/<uidb64>/<token>/', PasswordResetConfirmAPIView.as_view(), name='password_reset_confirm'),
+    path('user/', UserProfileRetrieveUpdateAPIView.as_view(), name='user-list-create'),
     path('categories/', CategoryListCreateAPIView.as_view(), name='category-list-create'),
-    path('categories/<int:pk>/', CategoryRetrieveUpdateDestroyAPIView.as_view(), name='category-detail'),
     path('products/', ProductListCreateAPIView.as_view(), name='product-list-create'),
-    path('products/<int:pk>/', ProductRetrieveUpdateDestroyAPIView.as_view(), name='product-detail'),
-    path('products/category/<str:category_name>/', ProductByCategoryAPIView.as_view(), name='products_by_category'),
+    path('products/search/', ProductListCreateAPIView.as_view(), name='product-search-by-name'),
+    path('products/categories/<str:category_name>/', ProductByCategoryAPIView.as_view(), name='products_by_category'),
     path('favorites/', FavoriteListCreateAPIView.as_view(), name='favorite-list-create'),    
     path('favorites/<int:pk>/', FavoriteRetrieveUpdateDestroyAPIView.as_view(), name='favorite-retrieve-update-destroy'),
-    path('carts/', CartListCreateAPIView.as_view(), name='cart-list-create'),
-    path('carts/<int:pk>/', CartRetrieveUpdateDestroyAPIView.as_view(), name='cart-detail'),
-    path('cartitems/', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
-    path('cartitems/<int:pk>/', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
-    path('payments/', PaymentListCreateAPIView.as_view(), name='payment-list-create'),
-    path('payments/<int:pk>/', PaymentRetrieveUpdateDestroyAPIView.as_view(), name='payment-detail'),
+    # path('cartitem/', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
+    path('cartitem/', CartItemCreateAPIView.as_view(), name='cartitem-list-create'),
+    path('cartitem/<int:pk>/', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
 ]
 
 

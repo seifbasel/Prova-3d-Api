@@ -2,84 +2,20 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import UserProfile, Category, Product, Cart, CartItem, Payment ,Favorite
-from .serializers import UserProfileSerializer, CategorySerializer, ProductSerializer,FavoriteSerializer,CartSerializer, CartItemSerializer, PaymentSerializer
+from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite
+from .serializers import UserProfileSerializer, CategorySerializer, ProductSerializer,FavoriteSerializer,CartSerializer, CartItemSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
 from back_api.permission import IsAdminOrReadOnly 
 from django.shortcuts import get_object_or_404
-
-
-
-# class SignupViewSet(viewsets.ViewSet):
-#     """
-#     View set to handle user signup.
-#     """
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def signup(self, request):
-#         """
-#         Create a new user and generate a token.
-
-#         Parameters:
-#         - username: The username of the new user.
-#         - email: The email of the new user.
-#         - password: The password of the new user.
-
-#         Returns:
-#         - A response indicating success or failure of the signup process.
-#         """
-#         User = get_user_model()
-#         username = request.data.get('username')
-#         email = request.data.get('email')
-#         password = request.data.get('password')
-
-#         if not all([username, email, password]):
-#             return Response({'error': 'Username, email, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             user = User.objects.create_user(username=username, email=email, password=password)
-#             token, _ = Token.objects.get_or_create(user=user)  # Generate token
-#             return Response({'message': 'User registered successfully', 'token': token.key}, status=status.HTTP_201_CREATED)
-#         except IntegrityError:
-#             return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class LoginViewSet(viewsets.ViewSet):
-#     """
-#     View set to handle user login.
-#     """
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def login(self, request):
-#         """
-#         Authenticate a user and generate an authentication token.
-
-#         Parameters:
-#         - username: The username of the user.
-#         - password: The password of the user.
-
-#         Returns:
-#         - A response containing an authentication token if authentication succeeds, or an error message if authentication fails.
-#         """
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-
-#         if not all([username, password]):
-#             return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         user = authenticate(username=username, password=password)
-
-#         if user:
-#             token, _ = Token.objects.get_or_create(user=user)
-#             return Response({'token': token.key}, status=status.HTTP_200_OK)
-#         else:
-#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-
-# views.py
-
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework import viewsets
+from back_api.serializers import LogoutSerializer
 
 class SignupViewSet(viewsets.ViewSet):
     """
@@ -108,6 +44,11 @@ class SignupViewSet(viewsets.ViewSet):
 
         try:
             user = User.objects.create_user(username=username, email=email, password=password)
+            
+            # Create a cart for the user
+            # Cart.objects.create(user=user)
+
+            # Generate a JWT token
             refresh = RefreshToken.for_user(user)
             return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
         except IntegrityError:
@@ -121,14 +62,15 @@ class LoginViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
         """
-        Authenticate a user and generate a JWT token.
+        Authenticate a user and generate JWT tokens.
 
         Parameters:
         - username: The username of the user.
         - password: The password of the user.
 
         Returns:
-        - A response containing a JWT access token if authentication succeeds, or an error message if authentication fails.
+        - A response containing JWT access and refresh tokens if authentication succeeds,
+          or an error message if authentication fails.
         """
         username = request.data.get('username')
         password = request.data.get('password')
@@ -140,104 +82,120 @@ class LoginViewSet(viewsets.ViewSet):
 
         if user:
             refresh = RefreshToken.for_user(user)
-            return Response({'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 
-from rest_framework.authtoken.models import Token
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+
+class TokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        return str(user.pk) + str(timestamp) + str(user.is_active)
+
+password_reset_token = TokenGenerator()
+
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
+
+def send_password_reset_email(user):
+    token = password_reset_token.make_token(user)
+    reset_link = settings.BASE_URL + reverse('password_reset_confirm', args=[user.pk, token])
+    subject = 'Password Reset Request'
+    message = f'Click the following link to reset your password: {reset_link}'
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+
+
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.models import User
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import logout
+
+class PasswordResetAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        user = User.objects.filter(email=email).first()
+        if user:
+            send_password_reset_email(user)
+            return Response({'message': 'Password reset email sent.'})
+        return Response({'error': 'User with this email does not exist.'}, status=400)
+
+class PasswordResetConfirmAPIView(APIView):
+    def post(self, request, uidb64, token):
+        try:
+            uid = force_bytes(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user and password_reset_token.check_token(user, token):
+            new_password = request.data.get('new_password')
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Password reset successfully.'})
+        return Response({'error': 'Invalid token or user.'}, status=400)
+
+
 
 class LogoutViewSet(viewsets.ViewSet):
-    """
-    View set to handle user logout.
-    """
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def logout(self, request):
-        """
-        Log out the current user.
+        refresh_token = request.data.get('refresh_token')
 
-        Returns:
-        - A response indicating success or failure of the logout process.
-        """
-        logout(request)
-        return Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
+        if not refresh_token:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            # Verify the provided refresh token
+            token = RefreshToken(refresh_token)
+            token.verify()
+            
+            # Blacklist the refresh token to invalidate the session
+            token.blacklist()
 
-# from rest_framework.views import APIView
+            # Generate a new pair of access and refresh tokens
+            user = request.user
+            new_refresh = RefreshToken.for_user(user)
+            new_access = new_refresh.access_token
 
-# class UserProfileInfoAPIView(APIView):
-#     """
-#     Endpoint to retrieve all information related to the logged-in user.
-#     """
-
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         # Retrieve user's profile
-#         user_profile = UserProfileSerializer(request.user.profile).data
-
-#         # Retrieve user's favorite products
-#         favorite_products = Favorite.objects.filter(user=request.user)
-#         favorite_products_data = FavoriteSerializer(favorite_products, many=True).data
-
-#         # Retrieve user's cart items
-#         cart_items = CartItem.objects.filter(cart__user=request.user)
-#         cart_items_data = CartItemSerializer(cart_items, many=True).data
-
-#         # Retrieve user's payments
-#         payments = Payment.objects.filter(user=request.user)
-#         payments_data = PaymentSerializer(payments, many=True).data
-
-#         # Compile all data
-#         user_info = {
-#             'profile': user_profile,
-#             'favorite_products': favorite_products_data,
-#             'cart_items': cart_items_data,
-#             'payments': payments_data
-#         }
-
-#         return Response(user_info)
+            # Return the new tokens to the user
+            return Response({
+                'access': str(new_access),
+                'refresh': str(new_refresh)
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': 'Failed to logout'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserListCreateAPIView(generics.ListCreateAPIView):
+
+
+class UserProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     """
-    Endpoint to list all users or create a new user.
-
+    Endpoint to retrieve and update user profile information.
+    
     GET: Retrieve the current user's profile.
-    POST: Create a new user.
+    PUT/PATCH: Update the current user's profile.
     """
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]  # Allow only authenticated users
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        """
-        Return the queryset of UserProfile filtered by the current user.
-        """
-        return UserProfile.objects.filter(user=self.request.user)
+    def get_object(self):
+        # Retrieve the profile of the current authenticated user
+        return self.request.user.userprofile
 
-    def perform_create(self, serializer):
-        """
-        Associate the new user's profile with the current user.
-        """
+    def perform_update(self, serializer):
+        # Ensure that the user field remains unchanged during update
         serializer.save(user=self.request.user)
-
-
-class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a user by ID.
-
-    GET: Retrieve a user by ID.
-    PUT: Update a user by ID.
-    PATCH: Partially update a user by ID.
-    DELETE: Delete a user by ID.
-    """
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
-    permission_classes = [IsAdminUser]  # Restrict access to admin users only
 
 
 # Category Endpoints
@@ -247,20 +205,6 @@ class CategoryListCreateAPIView(generics.ListCreateAPIView):
 
     GET: Retrieve a list of all categories.
     POST: Create a new category.
-    """
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
-
-
-class CategoryRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a category by ID.
-
-    GET: Retrieve a category by ID.
-    PUT: Update a category by ID.
-    PATCH: Partially update a category by ID.
-    DELETE: Delete a category by ID.
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -279,6 +223,7 @@ class ProductByCategoryAPIView(generics.ListAPIView):
         queryset = Product.objects.filter(category__name=category_name)
         return queryset
     
+
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all products or create a new product.
@@ -289,6 +234,13 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]  # Restrict access to authenticated users only
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        name = self.request.query_params.get('name')
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        return queryset
 
 
 class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -302,7 +254,7 @@ class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
     """
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
+    permission_classes = [IsAdminUser]  # Restrict access to authenticated users only
 
 
 # Favorite Endpoints
@@ -343,81 +295,42 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         return Favorite.objects.filter(user=self.request.user)
 
 
-# Cart Endpoints
-
-class CartListCreateAPIView(generics.ListCreateAPIView):
-    """
-    Endpoint to list all carts or create a new cart.
-
-    GET: Retrieve a list of all carts.
-    POST: Create a new cart.
-    """
-    serializer_class = CartSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-    def get_queryset(self):
-        # Get the UserProfile instance associated with the current user
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Filter carts based on the current user profile
-        return Cart.objects.filter(user=user_profile)
-
-    def perform_create(self, serializer):
-        # Get the UserProfile instance associated with the current user
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Associate the cart with the current user profile during creation
-        serializer.save(user=user_profile)
-
-
-class CartRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a cart by ID.
-
-    GET: Retrieve a cart by ID.
-    PUT: Update a cart by ID.
-    PATCH: Partially update a cart by ID.
-    DELETE: Delete a cart by ID.
-    """
-    queryset = Cart.objects.all()
-    serializer_class = CartSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-    def get_queryset(self):
-        # Get the UserProfile instance associated with the current user
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Filter carts based on the current user profile
-        return Cart.objects.filter(user=user_profile)
-
-
-
 # CartItem Endpoints
 
-class CartItemListCreateAPIView(generics.ListCreateAPIView):
-    """
-    Endpoint to list all cart items or create a new cart item.
+# class CartItemListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all cart items or create a new cart item.
 
-    GET: Retrieve a list of all cart items.
-    POST: Create a new cart item.
-    """
-    queryset = CartItem.objects.all()
+#     GET: Retrieve a list of all cart items.
+#     POST: Create a new cart item.
+#     """
+#     queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
+
+#     def get_queryset(self):
+#         # Get the user's cart items
+#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
+#         return CartItem.objects.filter(cart__user=user_profile)
+
+class CartItemCreateAPIView(generics.CreateAPIView):
     serializer_class = CartItemSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
 
-    def get_queryset(self):
-        # Get the UserProfile instance associated with the current user
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Filter cart items based on the current user's cart
-        return CartItem.objects.filter(cart__user=user_profile)
+    def create(self, request, *args, **kwargs):
+        # Check if the user has a profile
+        try:
+            user_profile = request.user.userprofile  # Assuming UserProfile model has a 'userprofile' attribute
+        except UserProfile.DoesNotExist:
+            return Response({"error": "User profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_create(self, serializer):
-        # Get the UserProfile instance associated with the current user
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Get the user's cart
-        cart = Cart.objects.get(user=user_profile)
-        # Associate the cart item with the current user's cart during creation
-        serializer.save(cart=cart)
-
-  
-
+        # Check if the user profile has a cart
+        if user_profile.cart:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(cart=user_profile.cart)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"error": "User does not have a cart."}, status=status.HTTP_400_BAD_REQUEST)
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -438,35 +351,3 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         # Filter cart items based on the current user's cart
         return CartItem.objects.filter(cart__user=user_profile)
 
-
-# Payment Endpoints
-
-class PaymentListCreateAPIView(generics.ListCreateAPIView):
-    """
-    Endpoint to list all payments or create a new payment.
-
-    GET: Retrieve a list of all payments.
-    POST: Create a new payment.
-    """
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-    def perform_create(self, serializer):
-        # Associate the payment with the current user during creation
-        serializer.save(user=self.request.user)
-
-
-
-class PaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a payment by ID.
-
-    GET: Retrieve a payment by ID.
-    PUT: Update a payment by ID.
-    PATCH: Partially update a payment by ID.
-    DELETE: Delete a payment by ID.
-    """
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only

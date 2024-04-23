@@ -202,16 +202,17 @@ CACHES = {
     }
 }
 
-BASE_URL = 'http://127.0.0.1:8000/'  # Replace 'http://example.com' with the actual base URL of your application
-# settings.py
+# BASE_URL = 'http://127.0.0.1:8000/'  # Replace 'http://example.com' with the actual base URL of your application
+# # settings.py
 
-# Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.example.com'  # SMTP server hostname
-EMAIL_PORT = 587  # SMTP port (587 for TLS, 465 for SSL)
-EMAIL_USE_TLS = True  # Use TLS (True/False)
-EMAIL_HOST_USER = 'seif@example.com'  # SMTP username
-EMAIL_HOST_PASSWORD = 'your_email_password'  # SMTP password
+# # Email Configuration
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.example.com'  # SMTP server hostname
+# EMAIL_PORT = 587  # SMTP port (587 for TLS, 465 for SSL)
+# EMAIL_USE_TLS = True  # Use TLS (True/False)
+# EMAIL_HOST_USER = 'seif@example.com'  # SMTP username
+# EMAIL_HOST_PASSWORD = 'your_email_password'  # SMTP password
 
-# Password Reset Email Template
-EMAIL_TEMPLATE_NAME = 'registration/password_reset_email.html'
+# # Password Reset Email Template
+# EMAIL_TEMPLATE_NAME = 'registration/password_reset_email.html'
+CSRF_TRUSTED_ORIGINS = ['https://virtual-fitting.onrender.com']

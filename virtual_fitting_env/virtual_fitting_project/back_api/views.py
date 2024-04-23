@@ -259,6 +259,55 @@ class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 # Favorite Endpoints
 
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from .models import Favorite, Product
+from .serializers import FavoriteSerializer
+
+# @api_view(['POST'])
+# @authentication_classes([JWTAuthentication])  # Use JWT authentication
+# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
+# def add_to_favorites(request):
+#     serializer = FavoriteSerializer(data=request.data)
+#     if serializer.is_valid():
+#         # Get the product ID from the request data
+#         product_id = serializer.validated_data['product']
+
+#         # Check if the product exists
+#         product = get_object_or_404(Product, pk=product_id)
+
+#         # Get the currently logged-in user
+#         user = request.user
+#         # # Get the UserProfile associated with the User
+#         # user_profile = UserProfile.objects.get(user=request.user)
+
+
+#         # Check if the favorite already exists for the user and product
+#         if Favorite.objects.filter(user=user, product=product).exists():
+#             return Response({'error': 'Product already exists in favorites'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Create a new favorite for the user and product
+#         favorite = Favorite.objects.create(user=user, product=product)
+
+#         # Serialize the created favorite and return the response
+#         serialized_favorite = FavoriteSerializer(favorite)
+#         return Response(serialized_favorite.data, status=status.HTTP_201_CREATED)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# # views.py
+# @api_view(['POST'])
+# @authentication_classes([JWTAuthentication])
+# @permission_classes([IsAuthenticated])
+# def add_to_favorites(request):
+#     serializer = FavoriteSerializer(data=request.data, context={'request': request})
+#     if serializer.is_valid():
+#         serializer.save()
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class FavoriteListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all favorite products or create a new favorite product.
@@ -295,42 +344,54 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         return Favorite.objects.filter(user=self.request.user)
 
 
-# CartItem Endpoints
+# Cart Endpoints
 
-# class CartItemListCreateAPIView(generics.ListCreateAPIView):
-#     """
-#     Endpoint to list all cart items or create a new cart item.
+class CartItemListCreateAPIView(generics.ListCreateAPIView):
+    """
+    Endpoint to list all cart items or create a new cart item.
 
-#     GET: Retrieve a list of all cart items.
-#     POST: Create a new cart item.
-#     """
-#     queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         # Get the user's cart items
-#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-#         return CartItem.objects.filter(cart__user=user_profile)
-
-class CartItemCreateAPIView(generics.CreateAPIView):
+    GET: Retrieve a list of all cart items.
+    POST: Create a new cart item.
+    """
+    queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
 
-    def create(self, request, *args, **kwargs):
-        # Check if the user has a profile
-        try:
-            user_profile = request.user.userprofile  # Assuming UserProfile model has a 'userprofile' attribute
-        except UserProfile.DoesNotExist:
-            return Response({"error": "User profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        # Get the user's cart items
+        user_profile = get_object_or_404(UserProfile, user=self.request.user)
+        return CartItem.objects.filter(cart__user=user_profile)
 
-        # Check if the user profile has a cart
-        if user_profile.cart:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(cart=user_profile.cart)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response({"error": "User does not have a cart."}, status=status.HTTP_400_BAD_REQUEST)
+
+# views.py
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+
+from .serializers import AddToCartSerializer
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])  # Use JWT authentication
+@permission_classes([IsAuthenticated])  # Ensure user is authenticated
+def add_to_cart(request):
+    serializer = AddToCartSerializer(data=request.data)
+    if serializer.is_valid():
+        product_id = serializer.validated_data['product_id']
+        product = get_object_or_404(Product, pk=product_id)
+
+        # Get the UserProfile associated with the User
+        user_profile = UserProfile.objects.get(user=request.user)
+
+        # Get or create the user's cart
+        cart, created = Cart.objects.get_or_create(user=user_profile)
+
+        # Check if the product is already in the cart
+        if CartItem.objects.filter(cart=cart, product=product).exists():
+            return Response({'error': 'Product already exists in the cart'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a new cart item
+        cart_item = CartItem.objects.create(cart=cart, product=product)
+        return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -350,4 +411,3 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
         # Filter cart items based on the current user's cart
         return CartItem.objects.filter(cart__user=user_profile)
-

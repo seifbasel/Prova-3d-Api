@@ -59,6 +59,7 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
+    # user=models.ForeignKey(User,on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
@@ -74,6 +75,8 @@ class CartItem(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
+
 
 @receiver(post_save, sender=UserProfile)
 def create_cart_for_user_profile(sender, instance, created, **kwargs):

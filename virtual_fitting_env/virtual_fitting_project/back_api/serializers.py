@@ -25,11 +25,28 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
     
+# serializers.py
+from rest_framework import serializers
 
 class FavoriteSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+
     class Meta:
         model = Favorite
-        fields = ['id', 'user', 'product', 'created_at']  # Adjust fields as needed
+        fields = ['product', 'created_at']
+        read_only_fields = ['user']
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        product = validated_data['product']
+
+        # Check if the favorite already exists for the user and product
+        if Favorite.objects.filter(user=user, product=product).exists():
+            raise serializers.ValidationError("Product already exists in favorites.")
+
+        # Create the new favorite
+        validated_data['user'] = user
+        return super().create(validated_data)
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -37,6 +54,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = '__all__'
 
+
+class AddToCartSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+
+    def validate_product_id(self, value):
+        # Check if the product exists
+        if not Product.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Product does not exist.")
+        return value
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)

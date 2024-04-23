@@ -2,21 +2,19 @@
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
-    # CartItemListCreateAPIView,
-      CartItemRetrieveUpdateDestroyAPIView,
-    CategoryListCreateAPIView,CartItemCreateAPIView,
-    ProductListCreateAPIView,ProductByCategoryAPIView,
-    UserProfileRetrieveUpdateAPIView,FavoriteListCreateAPIView,
-    FavoriteRetrieveUpdateDestroyAPIView
-)
+    LogoutViewSet ,SignupViewSet ,LoginViewSet,
+    PasswordResetAPIView, PasswordResetConfirmAPIView,
+    CartItemListCreateAPIView,CartItemRetrieveUpdateDestroyAPIView,
+    add_to_cart,
+    # add_to_favorites,
+    CategoryListCreateAPIView,ProductListCreateAPIView,ProductByCategoryAPIView,
+    UserProfileRetrieveUpdateAPIView,
+    FavoriteListCreateAPIView,FavoriteRetrieveUpdateDestroyAPIView)
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
-)
-from back_api.views import LogoutViewSet ,SignupViewSet ,LoginViewSet
+    )
 from rest_framework.routers import DefaultRouter
-from back_api.views import PasswordResetAPIView, PasswordResetConfirmAPIView
-
 # router = DefaultRouter()
 # router.register(r'users', UserListCreateAPIView)
 # router.register(r'products', ProductListCreateAPIView)
@@ -45,9 +43,10 @@ urlpatterns = [
     path('products/search/', ProductListCreateAPIView.as_view(), name='product-search-by-name'),
     path('products/categories/<str:category_name>/', ProductByCategoryAPIView.as_view(), name='products_by_category'),
     path('favorites/', FavoriteListCreateAPIView.as_view(), name='favorite-list-create'),    
+    # path('add_to_favorites/', add_to_favorites, name='add_to_favorites'),
     path('favorites/<int:pk>/', FavoriteRetrieveUpdateDestroyAPIView.as_view(), name='favorite-retrieve-update-destroy'),
     # path('cartitem/', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
-    path('cartitem/', CartItemCreateAPIView.as_view(), name='cartitem-list-create'),
+    path('add_to_cart/', add_to_cart, name='cartitem-list-create'),
     path('cartitem/<int:pk>/', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
 ]
 

@@ -13,6 +13,11 @@ class UserProfile(models.Model):
         return str(self.user)
 
 
+@receiver(post_save, sender=get_user_model())
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
@@ -52,6 +57,16 @@ class Favorite(models.Model):
         return f"{self.user.username} - {self.product.name}"
 
 
+@receiver(post_save, sender=UserProfile)
+def create_cart_for_user_profile(sender, instance, created, **kwargs):
+    """
+    Signal handler to create a cart for a user profile when it is created.
+    """
+    if created:
+        # Create a cart for the user profile
+        Cart.objects.create(user=instance)
+
+
 class Cart(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     def __str__(self):
@@ -62,27 +77,32 @@ class CartItem(models.Model):
     # user=models.ForeignKey(User,on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)  # Default to 1 when a new cart item is created
 
     class Meta:
         unique_together = ['cart', 'product']  # Ensure each product is added to the cart only once
     
     def __str__(self):
-        return f"{self.product.name}"
+        return f"Owner: {self.cart.user.user.username}, Product: {self.product.name}"
+
+class Order(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    ORDER_STATUS_CHOICES = (
+    ('Pending', 'Pending'),
+    ('Processing', 'Processing'),
+    ('Shipped', 'Shipped'),
+    ('Delivered', 'Delivered'),
+    ('Cancelled', 'Cancelled'),)
+    status = models.CharField(max_length=100, choices=ORDER_STATUS_CHOICES)
+    shipping_address = models.TextField()
 
 
-# receivers
-@receiver(post_save, sender=get_user_model())
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
 
 
 
-@receiver(post_save, sender=UserProfile)
-def create_cart_for_user_profile(sender, instance, created, **kwargs):
-    """
-    Signal handler to create a cart for a user profile when it is created.
-    """
-    if created:
-        # Create a cart for the user profile
-        Cart.objects.create(user=instance)
+

@@ -15,7 +15,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import viewsets
-from back_api.serializers import LogoutSerializer
+from back_api.serializers import LogoutSerializer,AddToCartSerializer
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+
 
 class SignupViewSet(viewsets.ViewSet):
     """
@@ -91,90 +93,64 @@ class LoginViewSet(viewsets.ViewSet):
 
 
 
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
-class TokenGenerator(PasswordResetTokenGenerator):
-    def _make_hash_value(self, user, timestamp):
-        return str(user.pk) + str(timestamp) + str(user.is_active)
-
-password_reset_token = TokenGenerator()
-
-from django.core.mail import send_mail
-from django.urls import reverse
-from django.conf import settings
-
-def send_password_reset_email(user):
-    token = password_reset_token.make_token(user)
-    reset_link = settings.BASE_URL + reverse('password_reset_confirm', args=[user.pk, token])
-    subject = 'Password Reset Request'
-    message = f'Click the following link to reset your password: {reset_link}'
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
-
-
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.models import User
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_decode
-from rest_framework.views import APIView
-from rest_framework.response import Response
-
-class PasswordResetAPIView(APIView):
-    def post(self, request):
-        email = request.data.get('email')
-        user = User.objects.filter(email=email).first()
-        if user:
-            send_password_reset_email(user)
-            return Response({'message': 'Password reset email sent.'})
-        return Response({'error': 'User with this email does not exist.'}, status=400)
-
-class PasswordResetConfirmAPIView(APIView):
-    def post(self, request, uidb64, token):
-        try:
-            uid = force_bytes(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
-
-        if user and password_reset_token.check_token(user, token):
-            new_password = request.data.get('new_password')
-            user.set_password(new_password)
-            user.save()
-            return Response({'message': 'Password reset successfully.'})
-        return Response({'error': 'Invalid token or user.'}, status=400)
-
-
-
 class LogoutViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    """
+    View set to handle user logout.
+    """
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['post'])
     def logout(self, request):
-        refresh_token = request.data.get('refresh_token')
+        """
+        Invalidate the user's JWT tokens upon logout.
 
-        if not refresh_token:
-            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        Returns:
+        - A response indicating successful logout.
+        """
+        serializer = LogoutSerializer(data=request.data)
+        if serializer.is_valid():
+            refresh_token = serializer.validated_data.get('refresh_token')
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            # Verify the provided refresh token
-            token = RefreshToken(refresh_token)
-            token.verify()
+
+# class LogoutViewSet(viewsets.ViewSet):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+#     def logout(self, request):
+#         refresh_token = request.data.get('refresh_token')
+
+#         if not refresh_token:
+#             return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             # Verify the provided refresh token
+#             token = RefreshToken(refresh_token)
+#             token.verify()
             
-            # Blacklist the refresh token to invalidate the session
-            token.blacklist()
+#             # Blacklist the refresh token to invalidate the session
+#             token.blacklist()
 
-            # Generate a new pair of access and refresh tokens
-            user = request.user
-            new_refresh = RefreshToken.for_user(user)
-            new_access = new_refresh.access_token
+#             # Generate a new pair of access and refresh tokens
+#             user = request.user
+#             new_refresh = RefreshToken.for_user(user)
+#             new_access = new_refresh.access_token
 
-            # Return the new tokens to the user
-            return Response({
-                'access': str(new_access),
-                'refresh': str(new_refresh)
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': 'Failed to logout'}, status=status.HTTP_400_BAD_REQUEST)
+#             # Return the new tokens to the user
+#             return Response({
+#                 'access': str(new_access),
+#                 'refresh': str(new_refresh)
+#             }, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({'error': 'Failed to logout'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -259,42 +235,6 @@ class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 # Favorite Endpoints
 
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from .models import Favorite, Product
-from .serializers import FavoriteSerializer
-
-# @api_view(['POST'])
-# @authentication_classes([JWTAuthentication])  # Use JWT authentication
-# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
-# def add_to_favorites(request):
-#     serializer = FavoriteSerializer(data=request.data)
-#     if serializer.is_valid():
-#         # Get the product ID from the request data
-#         product_id = serializer.validated_data['product']
-
-#         # Check if the product exists
-#         product = get_object_or_404(Product, pk=product_id)
-
-#         # Get the currently logged-in user
-#         user = request.user
-#         # # Get the UserProfile associated with the User
-#         # user_profile = UserProfile.objects.get(user=request.user)
-
-
-#         # Check if the favorite already exists for the user and product
-#         if Favorite.objects.filter(user=user, product=product).exists():
-#             return Response({'error': 'Product already exists in favorites'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Create a new favorite for the user and product
-#         favorite = Favorite.objects.create(user=user, product=product)
-
-#         # Serialize the created favorite and return the response
-#         serialized_favorite = FavoriteSerializer(favorite)
-#         return Response(serialized_favorite.data, status=status.HTTP_201_CREATED)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # # views.py
 # @api_view(['POST'])
@@ -325,6 +265,7 @@ class FavoriteListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Automatically set the user to the authenticated user
         serializer.save(user=self.request.user)
+
 
 class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -363,11 +304,6 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
         return CartItem.objects.filter(cart__user=user_profile)
 
 
-# views.py
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.response import Response
-
-from .serializers import AddToCartSerializer
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])  # Use JWT authentication
 @permission_classes([IsAuthenticated])  # Ensure user is authenticated
@@ -377,6 +313,10 @@ def add_to_cart(request):
         product_id = serializer.validated_data['product_id']
         product = get_object_or_404(Product, pk=product_id)
 
+        # Check if the product quantity is greater than 0
+        if product.quantity <= 0:
+            return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Get the UserProfile associated with the User
         user_profile = UserProfile.objects.get(user=request.user)
 
@@ -384,11 +324,19 @@ def add_to_cart(request):
         cart, created = Cart.objects.get_or_create(user=user_profile)
 
         # Check if the product is already in the cart
-        if CartItem.objects.filter(cart=cart, product=product).exists():
-            return Response({'error': 'Product already exists in the cart'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            # Check if adding one more quantity would exceed the available quantity
+            if cart_item.quantity + 1 > product.quantity:
+                return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
+            # If the product already exists in the cart and adding one more quantity is okay,
+            # increment the quantity by one
+            cart_item.quantity += 1
+            cart_item.save()
+        except CartItem.DoesNotExist:
+            # If the product is not in the cart, create a new cart item
+            cart_item = CartItem.objects.create(cart=cart, product=product)
 
-        # Create a new cart item
-        cart_item = CartItem.objects.create(cart=cart, product=product)
         return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -411,3 +359,36 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
         # Filter cart items based on the current user's cart
         return CartItem.objects.filter(cart__user=user_profile)
+    
+
+from django.db import transaction
+from back_api.models import Order,OrderItem
+
+@transaction.atomic
+def checkout(request):
+    # Get the user's cart
+    cart_items = CartItem.objects.filter(cart__user=request.user)
+
+    # Calculate total price
+    total_price = sum(item.product.price * item.quantity for item in cart_items)
+
+    # Create a new order
+    order = Order.objects.create(
+        user=request.user,
+        total_price=total_price,
+        status='Pending',  # Or any other initial status
+        shipping_address=request.data.get('shipping_address')
+    )
+
+    # Add products from the cart to the order
+    for item in cart_items:
+        OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity)
+
+    # Update product quantities and delete cart items
+    for item in cart_items:
+        product = item.product
+        product.quantity -= item.quantity
+        product.save()
+        item.delete()
+
+    return Response({'message': 'Order placed successfully'}, status=status.HTTP_201_CREATED)

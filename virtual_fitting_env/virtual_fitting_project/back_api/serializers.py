@@ -3,8 +3,9 @@ from rest_framework import  serializers
 from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite
 
 
+
 class LogoutSerializer(serializers.Serializer):
-    refresh_token = serializers.CharField()
+    refresh_token = serializers.CharField(required=True)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -55,14 +56,25 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# class AddToCartSerializer(serializers.Serializer):
+#     product_id = serializers.IntegerField()
+
+#     def validate_product_id(self, value):
+#         # Check if the product exists
+#         if not Product.objects.filter(pk=value).exists():
+#             raise serializers.ValidationError("Product does not exist.")
+#         return value
+
 class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
 
-    def validate_product_id(self, value):
-        # Check if the product exists
-        if not Product.objects.filter(pk=value).exists():
-            raise serializers.ValidationError("Product does not exist.")
-        return value
+    def validate(self, data):
+        product_id = data.get('product_id')
+        if not Product.objects.filter(pk=product_id, quantity__gt=0).exists():
+            raise serializers.ValidationError("Product is out of stock.")
+        return data
+
+
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)

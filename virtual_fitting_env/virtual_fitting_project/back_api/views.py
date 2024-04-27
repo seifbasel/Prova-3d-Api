@@ -4,8 +4,11 @@ from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite
-from .serializers import UserProfileSerializer, CategorySerializer, ProductSerializer,FavoriteSerializer,CartSerializer, CartItemSerializer
+from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order
+from .serializers import (UserProfileSerializer, CategorySerializer,
+                           ProductSerializer,FavoriteSerializer,
+                           CartSerializer, CartItemSerializer,OrderSerializer
+                            )
 from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
 from back_api.permission import IsAdminOrReadOnly 
 from django.shortcuts import get_object_or_404
@@ -46,9 +49,6 @@ class SignupViewSet(viewsets.ViewSet):
 
         try:
             user = User.objects.create_user(username=username, email=email, password=password)
-            
-            # Create a cart for the user
-            # Cart.objects.create(user=user)
 
             # Generate a JWT token
             refresh = RefreshToken.for_user(user)
@@ -118,41 +118,6 @@ class LogoutViewSet(viewsets.ViewSet):
                 return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class LogoutViewSet(viewsets.ViewSet):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def logout(self, request):
-#         refresh_token = request.data.get('refresh_token')
-
-#         if not refresh_token:
-#             return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             # Verify the provided refresh token
-#             token = RefreshToken(refresh_token)
-#             token.verify()
-            
-#             # Blacklist the refresh token to invalidate the session
-#             token.blacklist()
-
-#             # Generate a new pair of access and refresh tokens
-#             user = request.user
-#             new_refresh = RefreshToken.for_user(user)
-#             new_access = new_refresh.access_token
-
-#             # Return the new tokens to the user
-#             return Response({
-#                 'access': str(new_access),
-#                 'refresh': str(new_refresh)
-#             }, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({'error': 'Failed to logout'}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class UserProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
@@ -234,19 +199,6 @@ class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 
 # Favorite Endpoints
-
-
-# # views.py
-# @api_view(['POST'])
-# @authentication_classes([JWTAuthentication])
-# @permission_classes([IsAuthenticated])
-# def add_to_favorites(request):
-#     serializer = FavoriteSerializer(data=request.data, context={'request': request})
-#     if serializer.is_valid():
-#         serializer.save()
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class FavoriteListCreateAPIView(generics.ListCreateAPIView):
     """
@@ -361,34 +313,184 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         return CartItem.objects.filter(cart__user=user_profile)
     
 
+from rest_framework.views import APIView
 from django.db import transaction
-from back_api.models import Order,OrderItem
 
-@transaction.atomic
-def checkout(request):
-    # Get the user's cart
-    cart_items = CartItem.objects.filter(cart__user=request.user)
 
-    # Calculate total price
-    total_price = sum(item.product.price * item.quantity for item in cart_items)
+from rest_framework import status
+from django.http import Http404
+from rest_framework import status
+from django.http import Http404
 
-    # Create a new order
-    order = Order.objects.create(
-        user=request.user,
-        total_price=total_price,
-        status='Pending',  # Or any other initial status
-        shipping_address=request.data.get('shipping_address')
-    )
+class CheckoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    # Add products from the cart to the order
-    for item in cart_items:
-        OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity)
+    def post(self, request):
+        user_profile = request.user.userprofile
+        cart_items = CartItem.objects.filter(cart__user=user_profile)
+        
+        # Check if the cart is empty
+        if not cart_items:
+            return Response({'message': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Update product quantities and delete cart items
-    for item in cart_items:
-        product = item.product
-        product.quantity -= item.quantity
-        product.save()
-        item.delete()
+        total_price = sum(item.product.price * item.quantity for item in cart_items)
 
-    return Response({'message': 'Order placed successfully'}, status=status.HTTP_201_CREATED)
+        # Begin transaction to ensure atomicity
+        with transaction.atomic():
+            # Create an order
+            order = Order.objects.create(
+                user=user_profile,
+                total_price=total_price,
+                status='Pending',  # You can change this based on your workflow
+                shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
+            )
+
+            # Initialize an empty list to store product data
+            products_data = []
+
+            # Remove purchased items from the database and update product quantity
+            for cart_item in cart_items:
+                product = cart_item.product
+                
+                # Check if the product quantity is sufficient for the cart item
+                if product.quantity < cart_item.quantity:
+                    return Response({'message': f'Insufficient quantity for product {product.name}'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Reduce the product quantity
+                product.quantity -= cart_item.quantity
+                product.save()
+                
+                # Serialize the product associated with the cart item
+                product_serializer = ProductSerializer(product)
+                product_data = product_serializer.data
+                
+                # Include the quantity of the purchased product in the product data
+                product_data['quantity'] = cart_item.quantity
+                
+                # Add the product data to the list of products related to the order
+                products_data.append(product_data)
+                
+                # Delete the cart item
+                cart_item.delete()
+
+        # Serialize the order
+        order_serializer = OrderSerializer(order)
+        order_data = order_serializer.data
+        
+        # Assign the list of products to the order data
+        order_data['products'] = products_data
+
+        return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
+
+
+# class CheckoutAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         user_profile = request.user.userprofile
+#         cart_items = CartItem.objects.filter(cart__user=user_profile)
+#         total_price = sum(item.product.price * item.quantity for item in cart_items)
+
+#         # Begin transaction to ensure atomicity
+#         with transaction.atomic():
+#             # Create an order
+#             order = Order.objects.create(
+#                 user=user_profile,
+#                 total_price=total_price,
+#                 status='Pending',  # You can change this based on your workflow
+#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
+#             )
+
+#             # Initialize an empty list to store product data
+#             products_data = []
+
+#             # Remove purchased items from the database
+#             for cart_item in cart_items:
+#                 # Serialize the product associated with the cart item
+#                 product_serializer = ProductSerializer(cart_item.product)
+#                 product_data = product_serializer.data
+                
+#                 # Include the quantity of the purchased product in the product data
+#                 product_data['quantity'] = cart_item.quantity
+                
+#                 # Add the product data to the list of products related to the order
+#                 products_data.append(product_data)
+                
+#                 # Delete the cart item
+#                 cart_item.delete()
+
+#         # Serialize the order
+#         order_serializer = OrderSerializer(order)
+#         order_data = order_serializer.data
+        
+#         # Assign the list of products to the order data
+#         order_data['products'] = products_data
+
+#         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
+
+
+# class CheckoutAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         user_profile = request.user.userprofile
+#         cart_items = CartItem.objects.filter(cart__user=user_profile)
+#         total_price = sum(item.product.price * item.quantity for item in cart_items)
+
+#         # Begin transaction to ensure atomicity
+#         with transaction.atomic():
+#             # Create an order
+#             order = Order.objects.create(
+#                 user=user_profile,
+#                 total_price=total_price,
+#                 status='Pending',  # You can change this based on your workflow
+#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
+#             )
+
+#             # Remove purchased items from the database
+#             for cart_item in cart_items:
+#                 product = cart_item.product
+#                 product.quantity -= cart_item.quantity
+#                 product.save()
+#                 cart_item.delete()
+
+#         # Serialize the order and its related products
+#         order_serializer = OrderSerializer(order)
+#         order_data = order_serializer.data
+
+#         # Add products related to the order in the response
+#         products_data = []
+#         for cart_item in cart_items:
+#             product_serializer = ProductSerializer(cart_item.product)
+#             products_data.append(product_serializer.data)
+#         order_data['products'] = products_data
+
+#         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
+
+
+# class CheckoutAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         user_profile = request.user.userprofile
+#         cart_items = CartItem.objects.filter(cart__user=user_profile)
+#         total_price = sum(item.product.price * item.quantity for item in cart_items)
+
+#         # Begin transaction to ensure atomicity
+#         with transaction.atomic():
+#             # Create an order
+#             order = Order.objects.create(
+#                 user=user_profile,
+#                 total_price=total_price,
+#                 status='Pending',  # You can change this based on your workflow
+#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
+#             )
+
+#             # Remove purchased items from the database
+#             for cart_item in cart_items:
+#                 product = cart_item.product
+#                 product.quantity -= cart_item.quantity
+#                 product.save()
+#                 cart_item.delete()
+
+#         return Response({'message': 'Checkout successful'}, status=status.HTTP_201_CREATED)

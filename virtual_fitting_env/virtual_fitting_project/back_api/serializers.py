@@ -1,8 +1,6 @@
 # serializers.py
 from rest_framework import  serializers
-from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite
-
-
+from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order
 
 class LogoutSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=True)
@@ -26,8 +24,6 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
     
-# serializers.py
-from rest_framework import serializers
 
 class FavoriteSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
@@ -56,15 +52,6 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class AddToCartSerializer(serializers.Serializer):
-#     product_id = serializers.IntegerField()
-
-#     def validate_product_id(self, value):
-#         # Check if the product exists
-#         if not Product.objects.filter(pk=value).exists():
-#             raise serializers.ValidationError("Product does not exist.")
-#         return value
-
 class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
 
@@ -75,10 +62,15 @@ class AddToCartSerializer(serializers.Serializer):
         return data
 
 
-
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Cart
+        fields = '__all__'
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
         fields = '__all__'

@@ -22,6 +22,13 @@ from back_api.serializers import LogoutSerializer,AddToCartSerializer
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 
 
+
+# In views.py
+from django.http import HttpResponse
+
+def index(request):
+    return HttpResponse("Welcome to our virtual fitting API!")
+
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.

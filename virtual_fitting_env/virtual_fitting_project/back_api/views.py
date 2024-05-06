@@ -20,7 +20,8 @@ from rest_framework.decorators import action
 from rest_framework import viewsets
 from back_api.serializers import LogoutSerializer,AddToCartSerializer
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-
+from rest_framework.views import APIView
+from django.db import transaction
 
 
 # In views.py
@@ -161,22 +162,11 @@ class CategoryListCreateAPIView(generics.ListCreateAPIView):
 
 # Product Endpoints
 
-# get products of category
-class ProductByCategoryAPIView(generics.ListAPIView):
-    ''' get the products of a category by the name of category'''
-
-    serializer_class = ProductSerializer
-    def get_queryset(self):
-        category_name = self.kwargs['category_name']  # assuming category name is passed in URL
-        queryset = Product.objects.filter(category__name=category_name)
-        return queryset
-    
-
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all products or create a new product.
 
-    GET: Retrieve a list of all products.
+    GET: Retrieve a list of all products or products filtered by name.
     POST: Create a new product.
     """
     queryset = Product.objects.all()
@@ -186,9 +176,42 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get('name')
+        category_name = self.request.query_params.get('category')  # Get category name from query parameters
         if name:
             queryset = queryset.filter(name__icontains=name)
+        elif category_name:
+            # Filter products by category if category name is provided
+            queryset = queryset.filter(category__name=category_name)
         return queryset
+
+# # get products of category
+# class ProductByCategoryAPIView(generics.ListAPIView):
+#     ''' get the products of a category by the name of category'''
+
+#     serializer_class = ProductSerializer
+#     def get_queryset(self):
+#         category_name = self.kwargs['category_name']  # assuming category name is passed in URL
+#         queryset = Product.objects.filter(category__name=category_name)
+#         return queryset
+    
+
+# class ProductListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all products or create a new product.
+
+#     GET: Retrieve a list of all products.
+#     POST: Create a new product.
+#     """
+#     queryset = Product.objects.all()
+#     serializer_class = ProductSerializer
+#     permission_classes = [IsAdminOrReadOnly]  # Restrict access to authenticated users only
+
+#     def get_queryset(self):
+#         queryset = super().get_queryset()
+#         name = self.request.query_params.get('name')
+#         if name:
+#             queryset = queryset.filter(name__icontains=name)
+#         return queryset
 
 
 class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -246,6 +269,9 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
 # Cart Endpoints
 
+
+
+
 class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all cart items or create a new cart item.
@@ -262,42 +288,39 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
         return CartItem.objects.filter(cart__user=user_profile)
 
+    def post(self, request, *args, **kwargs):
+        serializer = AddToCartSerializer(data=request.data)
+        if serializer.is_valid():
+            product_id = serializer.validated_data['product_id']
+            product = get_object_or_404(Product, pk=product_id)
 
-@api_view(['POST'])
-@authentication_classes([JWTAuthentication])  # Use JWT authentication
-@permission_classes([IsAuthenticated])  # Ensure user is authenticated
-def add_to_cart(request):
-    serializer = AddToCartSerializer(data=request.data)
-    if serializer.is_valid():
-        product_id = serializer.validated_data['product_id']
-        product = get_object_or_404(Product, pk=product_id)
+            # Check if the product quantity is greater than 0
+            if product.quantity <= 0:
+                return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if the product quantity is greater than 0
-        if product.quantity <= 0:
-            return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
+            # Get the UserProfile associated with the User
+            user_profile = UserProfile.objects.get(user=request.user)
 
-        # Get the UserProfile associated with the User
-        user_profile = UserProfile.objects.get(user=request.user)
+            # Get or create the user's cart
+            cart, created = Cart.objects.get_or_create(user=user_profile)
 
-        # Get or create the user's cart
-        cart, created = Cart.objects.get_or_create(user=user_profile)
+            # Check if the product is already in the cart
+            try:
+                cart_item = CartItem.objects.get(cart=cart, product=product)
+                # Check if adding one more quantity would exceed the available quantity
+                if cart_item.quantity + 1 > product.quantity:
+                    return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
+                # If the product already exists in the cart and adding one more quantity is okay,
+                # increment the quantity by one
+                cart_item.quantity += 1
+                cart_item.save()
+            except CartItem.DoesNotExist:
+                # If the product is not in the cart, create a new cart item
+                cart_item = CartItem.objects.create(cart=cart, product=product)
 
-        # Check if the product is already in the cart
-        try:
-            cart_item = CartItem.objects.get(cart=cart, product=product)
-            # Check if adding one more quantity would exceed the available quantity
-            if cart_item.quantity + 1 > product.quantity:
-                return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
-            # If the product already exists in the cart and adding one more quantity is okay,
-            # increment the quantity by one
-            cart_item.quantity += 1
-            cart_item.save()
-        except CartItem.DoesNotExist:
-            # If the product is not in the cart, create a new cart item
-            cart_item = CartItem.objects.create(cart=cart, product=product)
+            return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -320,14 +343,114 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         return CartItem.objects.filter(cart__user=user_profile)
     
 
-from rest_framework.views import APIView
-from django.db import transaction
 
 
-from rest_framework import status
-from django.http import Http404
-from rest_framework import status
-from django.http import Http404
+# class CartItemListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all cart items or create a new cart item.
+
+#     GET: Retrieve a list of all cart items.
+#     POST: Create a new cart item.
+#     """
+#     queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
+
+#     def get_queryset(self):
+#         # Get the user's cart items
+#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
+#         return CartItem.objects.filter(cart__user=user_profile)
+
+
+# @api_view(['POST'])
+# @authentication_classes([JWTAuthentication])  # Use JWT authentication
+# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
+# def add_to_cart(request):
+#     serializer = AddToCartSerializer(data=request.data)
+#     if serializer.is_valid():
+#         product_id = serializer.validated_data['product_id']
+#         product = get_object_or_404(Product, pk=product_id)
+
+#         # Check if the product quantity is greater than 0
+#         if product.quantity <= 0:
+#             return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Get the UserProfile associated with the User
+#         user_profile = UserProfile.objects.get(user=request.user)
+
+#         # Get or create the user's cart
+#         cart, created = Cart.objects.get_or_create(user=user_profile)
+
+#         # Check if the product is already in the cart
+#         try:
+#             cart_item = CartItem.objects.get(cart=cart, product=product)
+#             # Check if adding one more quantity would exceed the available quantity
+#             if cart_item.quantity + 1 > product.quantity:
+#                 return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
+#             # If the product already exists in the cart and adding one more quantity is okay,
+#             # increment the quantity by one
+#             cart_item.quantity += 1
+#             cart_item.save()
+#         except CartItem.DoesNotExist:
+#             # If the product is not in the cart, create a new cart item
+#             cart_item = CartItem.objects.create(cart=cart, product=product)
+
+#         return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+# @api_view(['GET', 'POST'])
+# @authentication_classes([JWTAuthentication])  # Use JWT authentication
+# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
+# def add_to_cart(request):
+#     if request.method == 'GET':
+#         # Get the UserProfile associated with the User
+#         user_profile = UserProfile.objects.get(user=request.user)
+#         # Get the user's cart items
+#         cart_items = CartItem.objects.filter(cart__user=user_profile)
+#         serializer = CartItemSerializer(cart_items, many=True)
+#         return Response(serializer.data)
+
+#     elif request.method == 'POST':
+#         serializer = AddToCartSerializer(data=request.data)
+#         if serializer.is_valid():
+#             product_id = serializer.validated_data['product_id']
+#             product = get_object_or_404(Product, pk=product_id)
+
+#             # Check if the product quantity is greater than 0
+#             if product.quantity <= 0:
+#                 return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # Get the UserProfile associated with the User
+#             user_profile = UserProfile.objects.get(user=request.user)
+
+#             # Get or create the user's cart
+#             cart, created = Cart.objects.get_or_create(user=user_profile)
+
+#             # Check if the product is already in the cart
+#             try:
+#                 cart_item = CartItem.objects.get(cart=cart, product=product)
+#                 # Check if adding one more quantity would exceed the available quantity
+#                 if cart_item.quantity + 1 > product.quantity:
+#                     return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
+#                 # If the product already exists in the cart and adding one more quantity is okay,
+#                 # increment the quantity by one
+#                 cart_item.quantity += 1
+#                 cart_item.save()
+#             except CartItem.DoesNotExist:
+#                 # If the product is not in the cart, create a new cart item
+#                 cart_item = CartItem.objects.create(cart=cart, product=product)
+
+#             return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# CheckoutEndpoint 
+
 
 class CheckoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -388,116 +511,3 @@ class CheckoutAPIView(APIView):
         order_data['products'] = products_data
 
         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
-
-
-# class CheckoutAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         user_profile = request.user.userprofile
-#         cart_items = CartItem.objects.filter(cart__user=user_profile)
-#         total_price = sum(item.product.price * item.quantity for item in cart_items)
-
-#         # Begin transaction to ensure atomicity
-#         with transaction.atomic():
-#             # Create an order
-#             order = Order.objects.create(
-#                 user=user_profile,
-#                 total_price=total_price,
-#                 status='Pending',  # You can change this based on your workflow
-#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
-#             )
-
-#             # Initialize an empty list to store product data
-#             products_data = []
-
-#             # Remove purchased items from the database
-#             for cart_item in cart_items:
-#                 # Serialize the product associated with the cart item
-#                 product_serializer = ProductSerializer(cart_item.product)
-#                 product_data = product_serializer.data
-                
-#                 # Include the quantity of the purchased product in the product data
-#                 product_data['quantity'] = cart_item.quantity
-                
-#                 # Add the product data to the list of products related to the order
-#                 products_data.append(product_data)
-                
-#                 # Delete the cart item
-#                 cart_item.delete()
-
-#         # Serialize the order
-#         order_serializer = OrderSerializer(order)
-#         order_data = order_serializer.data
-        
-#         # Assign the list of products to the order data
-#         order_data['products'] = products_data
-
-#         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
-
-
-# class CheckoutAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         user_profile = request.user.userprofile
-#         cart_items = CartItem.objects.filter(cart__user=user_profile)
-#         total_price = sum(item.product.price * item.quantity for item in cart_items)
-
-#         # Begin transaction to ensure atomicity
-#         with transaction.atomic():
-#             # Create an order
-#             order = Order.objects.create(
-#                 user=user_profile,
-#                 total_price=total_price,
-#                 status='Pending',  # You can change this based on your workflow
-#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
-#             )
-
-#             # Remove purchased items from the database
-#             for cart_item in cart_items:
-#                 product = cart_item.product
-#                 product.quantity -= cart_item.quantity
-#                 product.save()
-#                 cart_item.delete()
-
-#         # Serialize the order and its related products
-#         order_serializer = OrderSerializer(order)
-#         order_data = order_serializer.data
-
-#         # Add products related to the order in the response
-#         products_data = []
-#         for cart_item in cart_items:
-#             product_serializer = ProductSerializer(cart_item.product)
-#             products_data.append(product_serializer.data)
-#         order_data['products'] = products_data
-
-#         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
-
-
-# class CheckoutAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         user_profile = request.user.userprofile
-#         cart_items = CartItem.objects.filter(cart__user=user_profile)
-#         total_price = sum(item.product.price * item.quantity for item in cart_items)
-
-#         # Begin transaction to ensure atomicity
-#         with transaction.atomic():
-#             # Create an order
-#             order = Order.objects.create(
-#                 user=user_profile,
-#                 total_price=total_price,
-#                 status='Pending',  # You can change this based on your workflow
-#                 shipping_address=request.data.get('shipping_address')  # Assuming shipping address is provided in request data
-#             )
-
-#             # Remove purchased items from the database
-#             for cart_item in cart_items:
-#                 product = cart_item.product
-#                 product.quantity -= cart_item.quantity
-#                 product.save()
-#                 cart_item.delete()
-
-#         return Response({'message': 'Checkout successful'}, status=status.HTTP_201_CREATED)

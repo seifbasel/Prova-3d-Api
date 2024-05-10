@@ -4,9 +4,8 @@ from django.urls import path
 from back_api.views import (
     LogoutViewSet ,SignupViewSet ,LoginViewSet,
     CartItemListCreateAPIView,CartItemRetrieveUpdateDestroyAPIView,
-    # add_to_cart,
-    CategoryListCreateAPIView,ProductListCreateAPIView,
-    # ProductByCategoryAPIView,
+    CategoryListCreateAPIView,
+    ProductListCreateAPIView,
     UserProfileRetrieveUpdateAPIView,
     FavoriteListCreateAPIView,FavoriteRetrieveUpdateDestroyAPIView,
     CheckoutAPIView,index
@@ -29,12 +28,9 @@ urlpatterns = [
     path('user', UserProfileRetrieveUpdateAPIView.as_view(), name='user-list-create'),
     path('categories', CategoryListCreateAPIView.as_view(), name='category-list-create'),
     path('products', ProductListCreateAPIView.as_view(), name='product-list-create'),
-    # path('products/search/', ProductListCreateAPIView.as_view(), name='product-search-by-name'),
-    # path('products/categories/<str:category_name>/', ProductByCategoryAPIView.as_view(), name='products_by_category'),
     path('favorites', FavoriteListCreateAPIView.as_view(), name='favorite-list-create'),    
     path('favorites/<int:pk>', FavoriteRetrieveUpdateDestroyAPIView.as_view(), name='favorite-retrieve-update-destroy'),
     path('cartitem', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
-    # path('cartitem/', add_to_cart, name='cartitem-create'),
     path('cartitem/<int:pk>', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
 ]

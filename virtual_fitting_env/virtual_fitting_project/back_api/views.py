@@ -184,35 +184,6 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
             queryset = queryset.filter(category__name=category_name)
         return queryset
 
-# # get products of category
-# class ProductByCategoryAPIView(generics.ListAPIView):
-#     ''' get the products of a category by the name of category'''
-
-#     serializer_class = ProductSerializer
-#     def get_queryset(self):
-#         category_name = self.kwargs['category_name']  # assuming category name is passed in URL
-#         queryset = Product.objects.filter(category__name=category_name)
-#         return queryset
-    
-
-# class ProductListCreateAPIView(generics.ListCreateAPIView):
-#     """
-#     Endpoint to list all products or create a new product.
-
-#     GET: Retrieve a list of all products.
-#     POST: Create a new product.
-#     """
-#     queryset = Product.objects.all()
-#     serializer_class = ProductSerializer
-#     permission_classes = [IsAdminOrReadOnly]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         queryset = super().get_queryset()
-#         name = self.request.query_params.get('name')
-#         if name:
-#             queryset = queryset.filter(name__icontains=name)
-#         return queryset
-
 
 class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """

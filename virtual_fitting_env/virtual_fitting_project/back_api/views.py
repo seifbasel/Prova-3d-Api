@@ -161,7 +161,6 @@ class CategoryListCreateAPIView(generics.ListCreateAPIView):
 
 
 # Product Endpoints
-
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all products or create a new product.
@@ -431,7 +430,6 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
 
 # CheckoutEndpoint 
-
 
 class CheckoutAPIView(APIView):
     permission_classes = [IsAuthenticated]

@@ -173,15 +173,25 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]  # Restrict access to authenticated users only
 
+
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get('name')
-        category_name = self.request.query_params.get('category')  # Get category name from query parameters
+        category_name = self.request.query_params.get('category')
+        brand_name=self.request.query_params.get('brand')
+        color_name = self.request.query_params.get('color')
+        size = self.request.query_params.get('size')
         if name:
             queryset = queryset.filter(name__icontains=name)
-        elif category_name:
-            # Filter products by category if category name is provided
+        if category_name:
             queryset = queryset.filter(category__name=category_name)
+        if brand_name:
+            queryset = queryset.filter(brand__name=brand_name)
+        if color_name:
+            queryset = queryset.filter(color__icontains=color_name)
+        if size:
+            queryset = queryset.filter(size__icontains=size)
+        
         return queryset
 
 

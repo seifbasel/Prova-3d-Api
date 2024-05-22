@@ -36,3 +36,6 @@ urlpatterns = [
     path('cartitem/<int:pk>', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

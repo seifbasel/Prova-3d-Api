@@ -8,15 +8,18 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15)
-    address = models.TextField() 
+    address = models.TextField()
+    image = models.ImageField(upload_to='users_images/',default=None)  
+
+    
     def __str__(self):
         return str(self.user)
 
 
-@receiver(post_save, sender=get_user_model())
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
+# @receiver(post_save, sender=get_user_model())
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created:
+#         UserProfile.objects.create(user=instance)
 
 class Category(models.Model):
     name = models.CharField(max_length=100)

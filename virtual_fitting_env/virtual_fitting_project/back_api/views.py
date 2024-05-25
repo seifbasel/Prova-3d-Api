@@ -1,11 +1,12 @@
 # views.py
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
+from django.forms import ValidationError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order
-from .serializers import (UserProfileSerializer, CategorySerializer,
+from .serializers import (SignupSerializer, UserProfileSerializer, CategorySerializer,
                            ProductSerializer,FavoriteSerializer,
                            CartSerializer, CartItemSerializer,OrderSerializer
                             )
@@ -30,6 +31,44 @@ from django.http import HttpResponse
 def index(request):
     return HttpResponse("Welcome to our virtual fitting API!")
 
+# class SignupViewSet(viewsets.ViewSet):
+#     """
+#     View set to handle user signup.
+#     """
+#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+#     def signup(self, request):
+#         """
+#         Create a new user and generate a JWT token.
+
+#         Parameters:
+#         - username: The username of the new user.
+#         - email: The email of the new user.
+#         - password: The password of the new user.
+
+#         Returns:
+#         - A response indicating success or failure of the signup process.
+#         """
+#         User = get_user_model()
+#         username = request.data.get('username')
+#         email = request.data.get('email')
+#         password = request.data.get('password')
+#         phone_number = request.data.get('phone_number')
+#         address = request.data.get('address')
+#         image = request.data.get('image')
+
+#         if not all([username, email, password]):
+#             return Response({'error': 'Username, email, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             user = User.objects.create_user(username=username, email=email, password=password)
+#             UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
+
+#             # Generate a JWT token
+#             refresh = RefreshToken.for_user(user)
+#             return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
+#         except IntegrityError:
+#             return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.
@@ -43,26 +82,76 @@ class SignupViewSet(viewsets.ViewSet):
         - username: The username of the new user.
         - email: The email of the new user.
         - password: The password of the new user.
+        - password_confirm: The password confirmation.
+        - phone_number: The phone number of the new user.
+        - address: The address of the new user.
+        - image: The image of the new user.
 
         Returns:
         - A response indicating success or failure of the signup process.
         """
-        User = get_user_model()
-        username = request.data.get('username')
-        email = request.data.get('email')
-        password = request.data.get('password')
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = serializer.save()
 
-        if not all([username, email, password]):
-            return Response({'error': 'Username, email, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+                # Additional user profile data
+                phone_number = serializer.validated_data.get('phone_number')
+                address = serializer.validated_data.get('address')
+                image = serializer.validated_data.get('image')
 
-        try:
-            user = User.objects.create_user(username=username, email=email, password=password)
+                UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
 
-            # Generate a JWT token
-            refresh = RefreshToken.for_user(user)
-            return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
-        except IntegrityError:
-            return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+                # Generate a JWT token
+                refresh = RefreshToken.for_user(user)
+                return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class SignupViewSet(viewsets.ViewSet):
+#     """
+#     View set to handle user signup.
+#     """
+#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+#     def signup(self, request):
+#         """
+#         Create a new user and generate a JWT token.
+
+#         Parameters:
+#         - username: The username of the new user.
+#         - email: The email of the new user.
+#         - password: The password of the new user.
+#         - phone_number: The phone number of the new user.
+#         - address: The address of the new user.
+#         - image: The image of the new user.
+
+#         Returns:
+#         - A response indicating success or failure of the signup process.
+#         """
+#         serializer = SignupSerializer(data=request.data)
+#         if serializer.is_valid():
+#             username = serializer.validated_data.get('username')
+#             email = serializer.validated_data.get('email')
+#             password = serializer.validated_data.get('password')
+#             phone_number = serializer.validated_data.get('phone_number')
+#             address = serializer.validated_data.get('address')
+#             image = serializer.validated_data.get('image')
+
+#             try:
+#                 User = get_user_model()
+#                 user = User.objects.create_user(username=username, email=email, password=password)
+#                 UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
+
+#                 # Generate a JWT token
+#                 refresh = RefreshToken.for_user(user)
+#                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
+#             except IntegrityError:
+#                 return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+#         else:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class LoginViewSet(viewsets.ViewSet):
@@ -249,8 +338,54 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
 # Cart Endpoints
 
+# class CartItemListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all cart items or create a new cart item.
 
+#     GET: Retrieve a list of all cart items.
+#     POST: Create a new cart item.
+#     """
+#     queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
 
+#     def get_queryset(self):
+#         # Get the user's cart items
+#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
+#         return CartItem.objects.filter(cart__user=user_profile)
+
+#     def post(self, request, *args, **kwargs):
+#         serializer = AddToCartSerializer(data=request.data)
+#         if serializer.is_valid():
+#             product_id = serializer.validated_data['product_id']
+#             product = get_object_or_404(Product, pk=product_id)
+
+#             # Check if the product quantity is greater than 0
+#             if product.quantity <= 0:
+#                 return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # Get the UserProfile associated with the User
+#             user_profile = UserProfile.objects.get(user=request.user)
+
+#             # Get or create the user's cart
+#             cart, created = Cart.objects.get_or_create(user=user_profile)
+
+#             # Check if the product is already in the cart
+#             try:
+#                 cart_item = CartItem.objects.get(cart=cart, product=product)
+#                 # Check if adding one more quantity would exceed the available quantity
+#                 if cart_item.quantity + 1 > product.quantity:
+#                     return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
+#                 # If the product already exists in the cart and adding one more quantity is okay,
+#                 # increment the quantity by one
+#                 cart_item.quantity += 1
+#                 cart_item.save()
+#             except CartItem.DoesNotExist:
+#                 # If the product is not in the cart, create a new cart item
+#                 cart_item = CartItem.objects.create(cart=cart, product=product)
+
+#             return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
@@ -298,9 +433,29 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
                 # If the product is not in the cart, create a new cart item
                 cart_item = CartItem.objects.create(cart=cart, product=product)
 
-            return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
+            return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+# class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     Endpoint to retrieve, update, or delete a cart item by ID.
+
+#     GET: Retrieve a cart item by ID.
+#     PUT: Update a cart item by ID.
+#     PATCH: Partially update a cart item by ID.
+#     DELETE: Delete a cart item by ID.
+#     """
+#     queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
+
+#     def get_queryset(self):
+#         # Get the UserProfile instance associated with the current user
+#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
+#         # Filter cart items based on the current user's cart
+#         return CartItem.objects.filter(cart__user=user_profile)
+    
 
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -321,113 +476,17 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
         # Filter cart items based on the current user's cart
         return CartItem.objects.filter(cart__user=user_profile)
-    
 
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {'message': 'Cart item deleted successfully'},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
-
-# class CartItemListCreateAPIView(generics.ListCreateAPIView):
-#     """
-#     Endpoint to list all cart items or create a new cart item.
-
-#     GET: Retrieve a list of all cart items.
-#     POST: Create a new cart item.
-#     """
-#     queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         # Get the user's cart items
-#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-#         return CartItem.objects.filter(cart__user=user_profile)
-
-
-# @api_view(['POST'])
-# @authentication_classes([JWTAuthentication])  # Use JWT authentication
-# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
-# def add_to_cart(request):
-#     serializer = AddToCartSerializer(data=request.data)
-#     if serializer.is_valid():
-#         product_id = serializer.validated_data['product_id']
-#         product = get_object_or_404(Product, pk=product_id)
-
-#         # Check if the product quantity is greater than 0
-#         if product.quantity <= 0:
-#             return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Get the UserProfile associated with the User
-#         user_profile = UserProfile.objects.get(user=request.user)
-
-#         # Get or create the user's cart
-#         cart, created = Cart.objects.get_or_create(user=user_profile)
-
-#         # Check if the product is already in the cart
-#         try:
-#             cart_item = CartItem.objects.get(cart=cart, product=product)
-#             # Check if adding one more quantity would exceed the available quantity
-#             if cart_item.quantity + 1 > product.quantity:
-#                 return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
-#             # If the product already exists in the cart and adding one more quantity is okay,
-#             # increment the quantity by one
-#             cart_item.quantity += 1
-#             cart_item.save()
-#         except CartItem.DoesNotExist:
-#             # If the product is not in the cart, create a new cart item
-#             cart_item = CartItem.objects.create(cart=cart, product=product)
-
-#         return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-# @api_view(['GET', 'POST'])
-# @authentication_classes([JWTAuthentication])  # Use JWT authentication
-# @permission_classes([IsAuthenticated])  # Ensure user is authenticated
-# def add_to_cart(request):
-#     if request.method == 'GET':
-#         # Get the UserProfile associated with the User
-#         user_profile = UserProfile.objects.get(user=request.user)
-#         # Get the user's cart items
-#         cart_items = CartItem.objects.filter(cart__user=user_profile)
-#         serializer = CartItemSerializer(cart_items, many=True)
-#         return Response(serializer.data)
-
-#     elif request.method == 'POST':
-#         serializer = AddToCartSerializer(data=request.data)
-#         if serializer.is_valid():
-#             product_id = serializer.validated_data['product_id']
-#             product = get_object_or_404(Product, pk=product_id)
-
-#             # Check if the product quantity is greater than 0
-#             if product.quantity <= 0:
-#                 return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
-
-#             # Get the UserProfile associated with the User
-#             user_profile = UserProfile.objects.get(user=request.user)
-
-#             # Get or create the user's cart
-#             cart, created = Cart.objects.get_or_create(user=user_profile)
-
-#             # Check if the product is already in the cart
-#             try:
-#                 cart_item = CartItem.objects.get(cart=cart, product=product)
-#                 # Check if adding one more quantity would exceed the available quantity
-#                 if cart_item.quantity + 1 > product.quantity:
-#                     return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
-#                 # If the product already exists in the cart and adding one more quantity is okay,
-#                 # increment the quantity by one
-#                 cart_item.quantity += 1
-#                 cart_item.save()
-#             except CartItem.DoesNotExist:
-#                 # If the product is not in the cart, create a new cart item
-#                 cart_item = CartItem.objects.create(cart=cart, product=product)
-
-#             return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+    def perform_destroy(self, instance):
+        instance.delete()
 
 # CheckoutEndpoint 
 

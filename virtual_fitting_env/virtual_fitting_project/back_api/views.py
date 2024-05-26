@@ -1,7 +1,6 @@
 # views.py
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
-from django.forms import ValidationError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response

@@ -1,7 +1,6 @@
 # views.py
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
-from django.forms import ValidationError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -20,54 +19,14 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import viewsets
 from back_api.serializers import LogoutSerializer,AddToCartSerializer
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.views import APIView
 from django.db import transaction
-
-
-# In views.py
 from django.http import HttpResponse
 
 def index(request):
     return HttpResponse("Welcome to our virtual fitting API!")
 
-# class SignupViewSet(viewsets.ViewSet):
-#     """
-#     View set to handle user signup.
-#     """
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def signup(self, request):
-#         """
-#         Create a new user and generate a JWT token.
 
-#         Parameters:
-#         - username: The username of the new user.
-#         - email: The email of the new user.
-#         - password: The password of the new user.
-
-#         Returns:
-#         - A response indicating success or failure of the signup process.
-#         """
-#         User = get_user_model()
-#         username = request.data.get('username')
-#         email = request.data.get('email')
-#         password = request.data.get('password')
-#         phone_number = request.data.get('phone_number')
-#         address = request.data.get('address')
-#         image = request.data.get('image')
-
-#         if not all([username, email, password]):
-#             return Response({'error': 'Username, email, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             user = User.objects.create_user(username=username, email=email, password=password)
-#             UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
-
-#             # Generate a JWT token
-#             refresh = RefreshToken.for_user(user)
-#             return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
-#         except IntegrityError:
-#             return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
 class SignupViewSet(viewsets.ViewSet):
     """
@@ -99,59 +58,50 @@ class SignupViewSet(viewsets.ViewSet):
                 phone_number = serializer.validated_data.get('phone_number')
                 address = serializer.validated_data.get('address')
                 image = serializer.validated_data.get('image')
-
                 UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
 
                 # Generate a JWT token
                 refresh = RefreshToken.for_user(user)
                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
             except IntegrityError:
-                return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': serializer.errors.get('error', 'Invalid data')}, status=status.HTTP_400_BAD_REQUEST)
 
-# class SignupViewSet(viewsets.ViewSet):
+
+# class LoginViewSet(viewsets.ViewSet):
 #     """
-#     View set to handle user signup.
+#     View set to handle user login.
 #     """
 #     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def signup(self, request):
+#     def login(self, request):
 #         """
-#         Create a new user and generate a JWT token.
+#         Authenticate a user and generate JWT tokens.
 
 #         Parameters:
-#         - username: The username of the new user.
-#         - email: The email of the new user.
-#         - password: The password of the new user.
-#         - phone_number: The phone number of the new user.
-#         - address: The address of the new user.
-#         - image: The image of the new user.
+#         - username: The username of the user.
+#         - password: The password of the user.
 
 #         Returns:
-#         - A response indicating success or failure of the signup process.
+#         - A response containing JWT access and refresh tokens if authentication succeeds,
+#           or an error message if authentication fails.
 #         """
-#         serializer = SignupSerializer(data=request.data)
-#         if serializer.is_valid():
-#             username = serializer.validated_data.get('username')
-#             email = serializer.validated_data.get('email')
-#             password = serializer.validated_data.get('password')
-#             phone_number = serializer.validated_data.get('phone_number')
-#             address = serializer.validated_data.get('address')
-#             image = serializer.validated_data.get('image')
+#         username = request.data.get('username')
+#         password = request.data.get('password')
 
-#             try:
-#                 User = get_user_model()
-#                 user = User.objects.create_user(username=username, email=email, password=password)
-#                 UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
+#         if not all([username, password]):
+#             return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-#                 # Generate a JWT token
-#                 refresh = RefreshToken.for_user(user)
-#                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
-#             except IntegrityError:
-#                 return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+#         user = authenticate(username=username, password=password)
+
+#         if user:
+#             refresh = RefreshToken.for_user(user)
+#             return Response({
+#                 'access': str(refresh.access_token),
+#                 'refresh': str(refresh)
+#             }, status=status.HTTP_200_OK)
 #         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class LoginViewSet(viewsets.ViewSet):
@@ -174,7 +124,7 @@ class LoginViewSet(viewsets.ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        if not all([username, password]):
+        if not username or not password:
             return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = authenticate(username=username, password=password)
@@ -186,7 +136,7 @@ class LoginViewSet(viewsets.ViewSet):
                 'refresh': str(refresh)
             }, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error':['Invalid credentials']}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 
@@ -387,6 +337,7 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 #             return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all cart items or create a new cart item.
@@ -436,26 +387,6 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
             return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-#     """
-#     Endpoint to retrieve, update, or delete a cart item by ID.
-
-#     GET: Retrieve a cart item by ID.
-#     PUT: Update a cart item by ID.
-#     PATCH: Partially update a cart item by ID.
-#     DELETE: Delete a cart item by ID.
-#     """
-#     queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         # Get the UserProfile instance associated with the current user
-#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-#         # Filter cart items based on the current user's cart
-#         return CartItem.objects.filter(cart__user=user_profile)
-    
 
 
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -549,3 +480,69 @@ class CheckoutAPIView(APIView):
         order_data['products'] = products_data
 
         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
+    
+
+
+# import joblib
+# from nltk.corpus import stopwords
+# from nltk.tokenize import word_tokenize
+# from nltk.stem import SnowballStemmer
+
+# # Preprocessing function
+# def preprocess_text(text):
+#     if isinstance(text, str):
+#         text = text.lower()
+#         tokens = word_tokenize(text)
+#         stop_words = set(stopwords.words('english'))
+#         filtered_tokens = [word for word in tokens if word not in stop_words]
+#         stemmer = SnowballStemmer(language='english')
+#         stemmed_tokens = [stemmer.stem(word) for word in filtered_tokens]
+#         processed_text = ' '.join(stemmed_tokens)
+#         return processed_text
+#     else:
+#         return ""
+
+# # Load the trained SVM model and TF-IDF vectorizer
+# svm_model = joblib.load('back_api/sentement_models/svm_model.pkl')
+# tfidf_vectorizer = joblib.load('back_api/sentement_models/tfidf_vectorizer.pkl')
+
+# # Function to predict sentiment of input text
+# def predict_sentiment(text):
+#     # Preprocess the input text
+#     processed_text = preprocess_text(text)
+#     # Transform the text using the trained TF-IDF vectorizer
+#     text_tfidf = tfidf_vectorizer.transform([processed_text])
+#     # Predict the sentiment using the trained SVM model
+#     prediction = svm_model.predict(text_tfidf)
+#     return 'Positive' if prediction[0] == 1 else 'Negative'
+
+# from rest_framework import generics, permissions, status
+# from rest_framework.response import Response
+# from rest_framework.views import APIView
+# from django.db import transaction
+# from django.shortcuts import get_object_or_404
+# from .models import UserProfile, Product, CartItem, Cart, Order, Review
+# from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
+
+# class ProductReviewListCreateAPIView(generics.ListCreateAPIView):
+#     serializer_class = ReviewSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_queryset(self):
+#         product_id = self.kwargs.get('product_id')
+#         return Review.objects.filter(product_id=product_id)
+
+#     def perform_create(self, serializer):
+#         product_id = self.kwargs.get('product_id')
+#         product = get_object_or_404(Product, id=product_id)
+#         user = self.request.user
+
+#         # Ensure the user has a delivered order for the product
+#         user_profile = get_object_or_404(UserProfile, user=user)
+#         if not Order.objects.filter(user=user_profile, status='Delivered', orderitem__product=product).exists():
+#             raise serializers.ValidationError('You can only review products you have purchased and have been delivered.')
+
+#         review_text = serializer.validated_data['review_text']
+#         sentiment = predict_sentiment(review_text)
+
+#         serializer.save(user=user, product=product, sentiment=sentiment)

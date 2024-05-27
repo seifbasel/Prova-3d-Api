@@ -101,4 +101,4 @@ class Order(models.Model):
     status = models.CharField(max_length=100, choices=ORDER_STATUS_CHOICES)
     shipping_address = models.TextField()
     # created_at = models.DateTimeField(auto_now_add=True)
-
+    

@@ -42,7 +42,7 @@ class Product(models.Model):
     brand = models.CharField(max_length=100)
     size = models.CharField(max_length=10)  
     color = models.CharField(max_length=50)
-    image = models.ImageField(upload_to='product_images/')  
+    image = models.ImageField(upload_to='product_images/')
 
     def __str__(self):
         return self.name
@@ -101,4 +101,4 @@ class Order(models.Model):
     status = models.CharField(max_length=100, choices=ORDER_STATUS_CHOICES)
     shipping_address = models.TextField()
     # created_at = models.DateTimeField(auto_now_add=True)
-    
+

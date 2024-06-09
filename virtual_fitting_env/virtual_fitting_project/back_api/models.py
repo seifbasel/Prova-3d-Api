@@ -8,10 +8,9 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15)
-    address = models.TextField()
-    image = models.ImageField(upload_to='users_images/',default=None)  
+    address = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='users_images/',default=None,blank=True)  
 
-    
     def __str__(self):
         return str(self.user)
 
@@ -36,7 +35,8 @@ class Product(models.Model):
     GENDER_CHOICES = (
         ('M', 'Male'),
         ('F', 'Female'),
-        ('B', 'both'),
+        ('k', 'Kids'),
+        ('B', 'Both'),
     )
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     brand = models.CharField(max_length=100)

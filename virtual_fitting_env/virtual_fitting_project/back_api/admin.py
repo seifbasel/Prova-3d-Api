@@ -2,7 +2,6 @@
 
 from django.contrib import admin
 from .models import UserProfile, Category, Product,Favorite,Cart, CartItem,Order
-# ,Review
 
 admin.site.register(UserProfile)
 admin.site.register(Category)

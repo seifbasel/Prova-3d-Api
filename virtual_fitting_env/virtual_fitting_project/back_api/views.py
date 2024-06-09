@@ -27,7 +27,6 @@ def index(request):
     return HttpResponse("Welcome to our virtual fitting API!")
 
 
-
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.
@@ -53,13 +52,11 @@ class SignupViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             try:
                 user = serializer.save()
-
                 # Additional user profile data
                 phone_number = serializer.validated_data.get('phone_number')
-                address = serializer.validated_data.get('address')
-                image = serializer.validated_data.get('image')
-                UserProfile.objects.create(user=user, phone_number=phone_number, image=image, address=address)
-
+                address = serializer.validated_data.get('address', '')  # Default to empty string if not provided
+                image = serializer.validated_data.get('image', None)
+                UserProfile.objects.create(user=user, phone_number=phone_number, address=address, image=image)
                 # Generate a JWT token
                 refresh = RefreshToken.for_user(user)
                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
@@ -162,7 +159,7 @@ class LogoutViewSet(viewsets.ViewSet):
                 token.blacklist()
                 return Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
             except Exception as e:
-                return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': ['Invalid refresh token']}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -219,6 +216,8 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         brand_name=self.request.query_params.get('brand')
         color_name = self.request.query_params.get('color')
         size = self.request.query_params.get('size')
+        gender = self.request.query_params.get('gender')
+
         if name:
             queryset = queryset.filter(name__icontains=name)
         if category_name:
@@ -229,7 +228,8 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
             queryset = queryset.filter(color__icontains=color_name)
         if size:
             queryset = queryset.filter(size__icontains=size)
-        
+        if gender:
+            queryset = queryset.filter(gender=gender)
         return queryset
 
 

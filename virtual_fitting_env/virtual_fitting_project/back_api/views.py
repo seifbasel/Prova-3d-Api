@@ -22,9 +22,41 @@ from back_api.serializers import LogoutSerializer,AddToCartSerializer
 from rest_framework.views import APIView
 from django.db import transaction
 from django.http import HttpResponse
+from rest_framework import generics
+from .models import Comment
+from .serializers import CommentSerializer
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+
 
 def index(request):
     return HttpResponse("Welcome to our virtual fitting API!")
+
+
+
+# class SignupViewSet(viewsets.ViewSet):
+#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+#     def signup(self, request):
+#         serializer = SignupSerializer(data=request.data)
+#         if serializer.is_valid():
+#             try:
+#                 user = serializer.save()
+#                 UserProfile.objects.create(
+#                     user=user, 
+#                     phone_number=serializer.validated_data.get('phone_number'), 
+#                     address=serializer.validated_data.get('address', ''), 
+#                     image=serializer.validated_data.get('image', None)
+#                 )
+#                 refresh = RefreshToken.for_user(user)
+#                 return Response({
+#                     'message': 'User registered successfully', 
+#                     'access': str(refresh.access_token),
+#                     'refresh': str(refresh)
+#                 }, status=status.HTTP_201_CREATED)
+#             except IntegrityError:
+#                 return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
+#             except Exception as e:
+#                 return Response({'error': ['An unexpected error occurred', str(e)]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         return Response({'error': serializer.errors.get('error', 'Invalid data')}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class SignupViewSet(viewsets.ViewSet):
@@ -211,6 +243,8 @@ class LogoutViewSet(viewsets.ViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# user profile end point
+
 class UserProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     """
     Endpoint to retrieve and update user profile information.
@@ -231,6 +265,7 @@ class UserProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
 
 
 # Category Endpoints
+
 class CategoryListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all categories or create a new category.
@@ -244,6 +279,7 @@ class CategoryListCreateAPIView(generics.ListCreateAPIView):
 
 
 # Product Endpoints
+
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all products or create a new product.
@@ -343,56 +379,6 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
 # Cart Endpoints
 
-# class CartItemListCreateAPIView(generics.ListCreateAPIView):
-#     """
-#     Endpoint to list all cart items or create a new cart item.
-
-#     GET: Retrieve a list of all cart items.
-#     POST: Create a new cart item.
-#     """
-#     queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         # Get the user's cart items
-#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-#         return CartItem.objects.filter(cart__user=user_profile)
-
-#     def post(self, request, *args, **kwargs):
-#         serializer = AddToCartSerializer(data=request.data)
-#         if serializer.is_valid():
-#             product_id = serializer.validated_data['product_id']
-#             product = get_object_or_404(Product, pk=product_id)
-
-#             # Check if the product quantity is greater than 0
-#             if product.quantity <= 0:
-#                 return Response({'error': 'Product is out of stock'}, status=status.HTTP_400_BAD_REQUEST)
-
-#             # Get the UserProfile associated with the User
-#             user_profile = UserProfile.objects.get(user=request.user)
-
-#             # Get or create the user's cart
-#             cart, created = Cart.objects.get_or_create(user=user_profile)
-
-#             # Check if the product is already in the cart
-#             try:
-#                 cart_item = CartItem.objects.get(cart=cart, product=product)
-#                 # Check if adding one more quantity would exceed the available quantity
-#                 if cart_item.quantity + 1 > product.quantity:
-#                     return Response({'error': 'Quantity exceeds available stock'}, status=status.HTTP_400_BAD_REQUEST)
-#                 # If the product already exists in the cart and adding one more quantity is okay,
-#                 # increment the quantity by one
-#                 cart_item.quantity += 1
-#                 cart_item.save()
-#             except CartItem.DoesNotExist:
-#                 # If the product is not in the cart, create a new cart item
-#                 cart_item = CartItem.objects.create(cart=cart, product=product)
-
-#             return Response({'success': 'Product added to cart'}, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all cart items or create a new cart item.
@@ -443,7 +429,6 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
     Endpoint to retrieve, update, or delete a cart item by ID.
@@ -473,6 +458,7 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 
     def perform_destroy(self, instance):
         instance.delete()
+
 
 # CheckoutEndpoint 
 
@@ -538,6 +524,51 @@ class CheckoutAPIView(APIView):
     
 
 
+# comments end point
+class CommentListCreateAPIView(generics.ListCreateAPIView):
+    """
+    Endpoint to list all comments for a product or create a new comment.
+    """
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        product_id = self.kwargs['product_id']
+        return Comment.objects.filter(product_id=product_id)
+
+    def perform_create(self, serializer):
+        product_id = self.kwargs['product_id']
+        product = generics.get_object_or_404(Product, pk=product_id)
+        serializer.save(product=product, user=self.request.user)
+        
+    # def perform_create(self, serializer):
+    #     serializer.save(user=self.request.user, product_id=self.kwargs['product_id'])
+
+class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Endpoint to retrieve, update, or delete a comment by ID.
+    """
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Comment.objects.filter(user=self.request.user)
+
+
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from .models import Comment
+# from .serializers import AllCommentsSerializer
+
+# class AllCommentsAPIView(APIView):
+#     def get(self, request):
+#         comments = Comment.objects.all()
+#         serializer = AllCommentsSerializer(comments, many=True)
+#         return Response(serializer.data)
+
+
+
 # import joblib
 # from nltk.corpus import stopwords
 # from nltk.tokenize import word_tokenize
@@ -571,33 +602,5 @@ class CheckoutAPIView(APIView):
 #     prediction = svm_model.predict(text_tfidf)
 #     return 'Positive' if prediction[0] == 1 else 'Negative'
 
-# from rest_framework import generics, permissions, status
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
-# from django.db import transaction
-# from django.shortcuts import get_object_or_404
-# from .models import UserProfile, Product, CartItem, Cart, Order, Review
-# from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
 
-# class ProductReviewListCreateAPIView(generics.ListCreateAPIView):
-#     serializer_class = ReviewSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_queryset(self):
-#         product_id = self.kwargs.get('product_id')
-#         return Review.objects.filter(product_id=product_id)
-
-#     def perform_create(self, serializer):
-#         product_id = self.kwargs.get('product_id')
-#         product = get_object_or_404(Product, id=product_id)
-#         user = self.request.user
-
-#         # Ensure the user has a delivered order for the product
-#         user_profile = get_object_or_404(UserProfile, user=user)
-#         if not Order.objects.filter(user=user_profile, status='Delivered', orderitem__product=product).exists():
-#             raise serializers.ValidationError('You can only review products you have purchased and have been delivered.')
-
-#         review_text = serializer.validated_data['review_text']
-#         sentiment = predict_sentiment(review_text)
-
-#         serializer.save(user=user, product=product, sentiment=sentiment)
+# predict_sentiment("i love it")

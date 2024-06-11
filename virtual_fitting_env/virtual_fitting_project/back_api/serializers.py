@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import  serializers
-from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order
+from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order,Comment
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -15,43 +15,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['id','user','phone_number','image','address']
         read_only_fields = ['user']
-
-
-# class SignupSerializer(serializers.Serializer):
-#     username = serializers.CharField(max_length=150)
-#     email = serializers.EmailField()
-#     password = serializers.CharField(max_length=128)
-#     password_confirm = serializers.CharField(max_length=128)
-#     phone_number = serializers.CharField(max_length=15, required=False)
-#     address = serializers.CharField(max_length=100, required=False)
-#     image = serializers.ImageField(required=False)
-
-#     def validate(self, data):
-#         password = data.get('password')
-#         password_confirm = data.get('password_confirm')
-
-#         if password != password_confirm:
-#             raise ValidationError({"error": "Passwords do not match"})
-
-#         try:
-#             validate_password(password)
-#         except ValidationError as e:
-#             error_messages = {"error": []}
-#             for message in e.messages:
-#                 error_messages["error"].append(message)
-#             raise ValidationError(error_messages)
-
-#         return data
-
-#     def create(self, validated_data):
-#         validated_data.pop('password_confirm')  # Remove password_confirm from the data
-#         user_data = {
-#             'username': validated_data['username'],
-#             'email': validated_data['email'],
-#             'password': validated_data['password'],
-#         }
-#         user = get_user_model().objects.create_user(**user_data)
-#         return user
 
 
 class SignupSerializer(serializers.Serializer):
@@ -99,7 +62,25 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'text', 'created_at', 'product', 'user']
+        read_only_fields = ['product', 'user']
+
+
+# class AllCommentsSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Comment
+#         fields = ['id', 'text', 'created_at', 'product', 'user']
+#         read_only_fields = ['product', 'user']
+
+
 class ProductSerializer(serializers.ModelSerializer):
+    comments = CommentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Product
         fields = '__all__'
@@ -161,3 +142,4 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
+        

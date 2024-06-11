@@ -15,11 +15,6 @@ class UserProfile(models.Model):
         return str(self.user)
 
 
-# @receiver(post_save, sender=get_user_model())
-# def create_user_profile(sender, instance, created, **kwargs):
-#     if created:
-#         UserProfile.objects.create(user=instance)
-
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
@@ -102,3 +97,11 @@ class Order(models.Model):
     shipping_address = models.TextField()
     # created_at = models.DateTimeField(auto_now_add=True)
 
+class Comment(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments')
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text

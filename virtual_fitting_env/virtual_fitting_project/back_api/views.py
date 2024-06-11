@@ -522,7 +522,7 @@ class CheckoutAPIView(APIView):
 
         return Response({'message': 'Checkout successful', 'order': order_data}, status=status.HTTP_201_CREATED)
     
-
+ 
 #  comments end point
 
 from .utils import predict_sentiment

@@ -52,10 +52,11 @@ class SignupSerializer(serializers.Serializer):
         user = get_user_model().objects.create_user(**user_data)
         return user
 
+
 class LogoutSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=True)
     
-
+    
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -69,13 +70,6 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['id', 'text', 'created_at', 'product', 'user','sentiment']
         read_only_fields = ['product', 'user','sentiment']
-
-
-# class AllCommentsSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Comment
-#         fields = ['id', 'text', 'created_at', 'product', 'user']
-#         read_only_fields = ['product', 'user']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -142,4 +136,3 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
-        

@@ -101,6 +101,7 @@ class Comment(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField()
+    sentiment = models.IntegerField(null=True)  # Add sentiment field here
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

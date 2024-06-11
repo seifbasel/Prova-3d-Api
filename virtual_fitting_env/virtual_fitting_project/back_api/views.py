@@ -524,7 +524,10 @@ class CheckoutAPIView(APIView):
     
 
 
-# comments end point
+#  comments end point
+
+from .utils import predict_sentiment
+
 class CommentListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all comments for a product or create a new comment.
@@ -539,7 +542,30 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         product_id = self.kwargs['product_id']
         product = generics.get_object_or_404(Product, pk=product_id)
-        serializer.save(product=product, user=self.request.user)
+        text = serializer.validated_data.get('text')
+        
+        # Predict the sentiment of the comment
+        sentiment = predict_sentiment(text)
+        
+        serializer.save(product=product, user=self.request.user, sentiment=sentiment)  # Save with sentiment
+
+
+
+# class CommentListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all comments for a product or create a new comment.
+#     """
+#     serializer_class = CommentSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+
+#     def get_queryset(self):
+#         product_id = self.kwargs['product_id']
+#         return Comment.objects.filter(product_id=product_id)
+
+#     def perform_create(self, serializer):
+#         product_id = self.kwargs['product_id']
+#         product = generics.get_object_or_404(Product, pk=product_id)
+#         serializer.save(product=product, user=self.request.user)
         
     # def perform_create(self, serializer):
     #     serializer.save(user=self.request.user, product_id=self.kwargs['product_id'])
@@ -556,51 +582,3 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         return Comment.objects.filter(user=self.request.user)
 
 
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from .models import Comment
-# from .serializers import AllCommentsSerializer
-
-# class AllCommentsAPIView(APIView):
-#     def get(self, request):
-#         comments = Comment.objects.all()
-#         serializer = AllCommentsSerializer(comments, many=True)
-#         return Response(serializer.data)
-
-
-
-# import joblib
-# from nltk.corpus import stopwords
-# from nltk.tokenize import word_tokenize
-# from nltk.stem import SnowballStemmer
-
-# # Preprocessing function
-# def preprocess_text(text):
-#     if isinstance(text, str):
-#         text = text.lower()
-#         tokens = word_tokenize(text)
-#         stop_words = set(stopwords.words('english'))
-#         filtered_tokens = [word for word in tokens if word not in stop_words]
-#         stemmer = SnowballStemmer(language='english')
-#         stemmed_tokens = [stemmer.stem(word) for word in filtered_tokens]
-#         processed_text = ' '.join(stemmed_tokens)
-#         return processed_text
-#     else:
-#         return ""
-
-# # Load the trained SVM model and TF-IDF vectorizer
-# svm_model = joblib.load('back_api/sentement_models/svm_model.pkl')
-# tfidf_vectorizer = joblib.load('back_api/sentement_models/tfidf_vectorizer.pkl')
-
-# # Function to predict sentiment of input text
-# def predict_sentiment(text):
-#     # Preprocess the input text
-#     processed_text = preprocess_text(text)
-#     # Transform the text using the trained TF-IDF vectorizer
-#     text_tfidf = tfidf_vectorizer.transform([processed_text])
-#     # Predict the sentiment using the trained SVM model
-#     prediction = svm_model.predict(text_tfidf)
-#     return 'Positive' if prediction[0] == 1 else 'Negative'
-
-
-# predict_sentiment("i love it")

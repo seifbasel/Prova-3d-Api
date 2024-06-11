@@ -27,6 +27,53 @@ def index(request):
     return HttpResponse("Welcome to our virtual fitting API!")
 
 
+# class SignupViewSet(viewsets.ViewSet):
+#     """
+#     View set to handle user signup.
+#     """
+#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+#     def signup(self, request):
+#         """
+#         Create a new user and generate a JWT token.
+
+#         Parameters:
+#         - username: The username of the new user.
+#         - email: The email of the new user.
+#         - password: The password of the new user.
+#         - password_confirm: The password confirmation.
+#         - phone_number: The phone number of the new user.
+#         - address: The address of the new user.
+#         - image: The image of the new user.
+
+#         Returns:
+#         - A response indicating success or failure of the signup process.
+#         """
+#         serializer = SignupSerializer(data=request.data)
+#         if serializer.is_valid():
+#             try:
+#                 user = serializer.save()
+#                 # Additional user profile data
+#                 phone_number = serializer.validated_data.get('phone_number')
+#                 address = serializer.validated_data.get('address', '')  # Default to empty string if not provided
+#                 image = serializer.validated_data.get('image', None)
+
+#                 # Create UserProfile
+#                 try:
+#                     UserProfile.objects.create(user=user, phone_number=phone_number, address=address, image=image)
+#                 except Exception as e:
+#                     # Rollback the user creation if profile creation fails
+#                     user.delete()
+#                     return Response({'error': 'Failed to create user profile', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+#                 # Generate a JWT token
+#                 refresh = RefreshToken.for_user(user)
+#                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token),'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
+#             except IntegrityError:
+#                 return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
+#         else:
+#             return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.
@@ -59,7 +106,7 @@ class SignupViewSet(viewsets.ViewSet):
                 UserProfile.objects.create(user=user, phone_number=phone_number, address=address, image=image)
                 # Generate a JWT token
                 refresh = RefreshToken.for_user(user)
-                return Response({'message': 'User registered successfully', 'access': str(refresh.access_token)}, status=status.HTTP_201_CREATED)
+                return Response({'message': 'User registered successfully', 'access': str(refresh.access_token),'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
             except IntegrityError:
                 return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -284,6 +331,14 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     def get_queryset(self):
         # Only allow the authenticated user to access their own favorites
         return Favorite.objects.filter(user=self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {'message': 'Cart item deleted successfully'},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 # Cart Endpoints

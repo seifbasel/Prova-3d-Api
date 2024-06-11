@@ -110,7 +110,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Favorite
-        fields = ['product', 'created_at']
+        fields = ['id', 'product']
         read_only_fields = ['user']
 
     def create(self, validated_data):
@@ -124,6 +124,11 @@ class FavoriteSerializer(serializers.ModelSerializer):
         # Create the new favorite
         validated_data['user'] = user
         return super().create(validated_data)
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['product'] = ProductSerializer(instance.product).data
+        return representation
 
 
 class CartItemSerializer(serializers.ModelSerializer):

@@ -36,6 +36,7 @@ class Product(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     brand = models.CharField(max_length=100)
     size = models.CharField(max_length=10)  
+    # make like gender
     color = models.CharField(max_length=50)
     image = models.ImageField(upload_to='product_images/')
 
@@ -72,7 +73,6 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    # user=models.ForeignKey(User,on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)  # Default to 1 when a new cart item is created

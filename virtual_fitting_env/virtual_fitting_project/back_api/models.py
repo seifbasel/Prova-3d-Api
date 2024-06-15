@@ -35,10 +35,18 @@ class Product(models.Model):
     )
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     brand = models.CharField(max_length=100)
-    size = models.CharField(max_length=10)  
-    # make like gender
+    SIZE_CHOICES = (
+            ('S', 'S'),
+            ('M', 'M'),
+            ('L', 'L'),
+            ('XL', 'XL'),
+            ('XXL', 'XXL'),
+        )
+    size = models.CharField(max_length=10,choices=SIZE_CHOICES)    
     color = models.CharField(max_length=50)
     image = models.ImageField(upload_to='product_images/')
+    lens_id=models.CharField(max_length=200)
+    lens_group_id=models.CharField(max_length=200)
 
     def __str__(self):
         return self.name
@@ -96,6 +104,10 @@ class Order(models.Model):
     status = models.CharField(max_length=100, choices=ORDER_STATUS_CHOICES)
     shipping_address = models.TextField()
     # created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Owner: {self.user.user.username}"
+
+    
 
 class Comment(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)

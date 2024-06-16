@@ -145,41 +145,6 @@ class SignupViewSet(viewsets.ViewSet):
             return Response({'error': serializer.errors.get('error', 'Invalid data')}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class LoginViewSet(viewsets.ViewSet):
-#     """
-#     View set to handle user login.
-#     """
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def login(self, request):
-#         """
-#         Authenticate a user and generate JWT tokens.
-
-#         Parameters:
-#         - username: The username of the user.
-#         - password: The password of the user.
-
-#         Returns:
-#         - A response containing JWT access and refresh tokens if authentication succeeds,
-#           or an error message if authentication fails.
-#         """
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-
-#         if not all([username, password]):
-#             return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         user = authenticate(username=username, password=password)
-
-#         if user:
-#             refresh = RefreshToken.for_user(user)
-#             return Response({
-#                 'access': str(refresh.access_token),
-#                 'refresh': str(refresh)
-#             }, status=status.HTTP_200_OK)
-#         else:
-#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
 class LoginViewSet(viewsets.ViewSet):
     """
     View set to handle user login.

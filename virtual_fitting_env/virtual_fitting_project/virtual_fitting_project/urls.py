@@ -6,14 +6,13 @@ from back_api.views import (
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     LogoutViewSet,
-    # ProductReviewListCreateAPIView,
     SignupViewSet,LoginViewSet,
     CartItemListCreateAPIView,CartItemRetrieveUpdateDestroyAPIView,
     CategoryListCreateAPIView,
     ProductListCreateAPIView,
     UserProfileRetrieveUpdateAPIView,
     FavoriteListCreateAPIView,FavoriteRetrieveUpdateDestroyAPIView,
-    CheckoutAPIView,index
+    CheckoutAPIView
     )
 
 from rest_framework_simplejwt.views import (

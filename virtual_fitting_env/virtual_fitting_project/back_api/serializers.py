@@ -4,10 +4,7 @@ from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Ord
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 from django.core.exceptions import ValidationError
-from rest_framework.response import Response
-
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -94,7 +91,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
         # Check if the favorite already exists for the user and product
         if Favorite.objects.filter(user=user, product=product).exists():
-            raise serializers.ValidationError("Product already exists in favorites.")
+            raise serializers.ValidationError({"error": "Product already exists in favorites."})
 
         # Create the new favorite
         validated_data['user'] = user
@@ -116,12 +113,6 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
-
-    def validate(self, data):
-        product_id = data.get('product_id')
-        if not Product.objects.filter(pk=product_id, quantity__gt=0).exists():
-            raise serializers.ValidationError("Product is out of stock.")
-        return data
 
 
 class CartSerializer(serializers.ModelSerializer):

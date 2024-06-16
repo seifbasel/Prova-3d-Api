@@ -579,5 +579,3 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
     def get_queryset(self):
         return Comment.objects.filter(user=self.request.user)
-
-

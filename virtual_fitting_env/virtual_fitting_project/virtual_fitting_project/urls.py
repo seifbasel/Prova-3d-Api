@@ -24,10 +24,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # path('', index, name='index'),
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
-    # path('token', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('admin/', admin.site.urls),
     path('signup', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('login', LoginViewSet.as_view({'post': 'login'}), name='user-login'),

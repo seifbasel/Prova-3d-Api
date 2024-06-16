@@ -76,7 +76,6 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
     
-
 class FavoriteSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 

@@ -28,11 +28,6 @@ from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 
 
-def index(request):
-    return HttpResponse("Welcome to our virtual fitting API!")
-
-
-
 # class SignupViewSet(viewsets.ViewSet):
 #     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
 #     def signup(self, request):

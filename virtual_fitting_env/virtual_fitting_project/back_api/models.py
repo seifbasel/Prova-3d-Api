@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db.models import JSONField
 
 
 class UserProfile(models.Model):
@@ -20,6 +21,36 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+# class Product(models.Model):
+#     name = models.CharField(max_length=100)
+#     description = models.TextField()
+#     price = models.DecimalField(max_digits=10, decimal_places=2)
+#     quantity = models.IntegerField(default=0)
+#     category = models.ForeignKey(Category, on_delete=models.CASCADE)
+#     GENDER_CHOICES = (
+#         ('M', 'Male'),
+#         ('F', 'Female'),
+#         ('k', 'Kids'),
+#         ('B', 'Both'),
+#     )
+#     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+#     brand = models.CharField(max_length=100)
+#     SIZE_CHOICES = (
+#             ('S', 'S'),
+#             ('M', 'M'),
+#             ('L', 'L'),
+#             ('XL', 'XL'),
+#             ('XXL', 'XXL'),
+#         )
+#     size = models.CharField(max_length=10,choices=SIZE_CHOICES)    
+#     color = models.CharField(max_length=50)
+#     image = models.ImageField(upload_to='product_images/')
+#     lens_id=models.CharField(max_length=200)
+#     lens_group_id=models.CharField(max_length=200)
+
+#     def __str__(self):
+#         return self.name
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
@@ -50,7 +81,6 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 class Favorite(models.Model):

@@ -132,7 +132,7 @@ class SignupViewSet(viewsets.ViewSet):
             try:
                 user = serializer.save()
                 # Additional user profile data
-                phone_number = serializer.validated_data.get('phone_number')
+                phone_number = serializer.validated_data.get('phone_number','')
                 address = serializer.validated_data.get('address', '')  # Default to empty string if not provided
                 image = serializer.validated_data.get('image', None)
                 UserProfile.objects.create(user=user, phone_number=phone_number, address=address, image=image)
@@ -140,7 +140,7 @@ class SignupViewSet(viewsets.ViewSet):
                 refresh = RefreshToken.for_user(user)
                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token),'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
             except IntegrityError:
-                return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'error': serializer.errors.get('error', 'Invalid data')}, status=status.HTTP_400_BAD_REQUEST)
 

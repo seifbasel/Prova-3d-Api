@@ -29,7 +29,7 @@ class SignupSerializer(serializers.Serializer):
 
         # Validate password match
         if password != password_confirm:
-            raise ValidationError({"error": ["Passwords do not match"]})
+            raise ValidationError({"error": "Passwords do not match"})
 
         # Validate password strength
         try:

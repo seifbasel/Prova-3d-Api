@@ -1,4 +1,5 @@
-from django.contrib.auth import authenticate
+# views.py
+from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
@@ -12,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
 from back_api.permission import IsAdminOrReadOnly 
 from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -23,7 +25,8 @@ from rest_framework import generics
 from .models import Comment
 from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-    
+
+        
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.
@@ -429,8 +432,28 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
         # Predict the sentiment of the comment
         sentiment = predict_sentiment(text)
         
-        serializer.save(product=product, user=self.request.user, sentiment=sentiment)  
+        serializer.save(product=product, user=self.request.user, sentiment=sentiment)  # Save with sentiment
 
+
+
+# class CommentListCreateAPIView(generics.ListCreateAPIView):
+#     """
+#     Endpoint to list all comments for a product or create a new comment.
+#     """
+#     serializer_class = CommentSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+
+#     def get_queryset(self):
+#         product_id = self.kwargs['product_id']
+#         return Comment.objects.filter(product_id=product_id)
+
+#     def perform_create(self, serializer):
+#         product_id = self.kwargs['product_id']
+#         product = generics.get_object_or_404(Product, pk=product_id)
+#         serializer.save(product=product, user=self.request.user)
+        
+    # def perform_create(self, serializer):
+    #     serializer.save(user=self.request.user, product_id=self.kwargs['product_id'])
 
 class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """

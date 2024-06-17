@@ -1,5 +1,4 @@
-# views.py
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
@@ -20,86 +19,11 @@ from rest_framework import viewsets
 from back_api.serializers import LogoutSerializer,AddToCartSerializer
 from rest_framework.views import APIView
 from django.db import transaction
-from django.http import HttpResponse
 from rest_framework import generics
 from .models import Comment
 from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-
-
-# class SignupViewSet(viewsets.ViewSet):
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def signup(self, request):
-#         serializer = SignupSerializer(data=request.data)
-#         if serializer.is_valid():
-#             try:
-#                 user = serializer.save()
-#                 UserProfile.objects.create(
-#                     user=user, 
-#                     phone_number=serializer.validated_data.get('phone_number'), 
-#                     address=serializer.validated_data.get('address', ''), 
-#                     image=serializer.validated_data.get('image', None)
-#                 )
-#                 refresh = RefreshToken.for_user(user)
-#                 return Response({
-#                     'message': 'User registered successfully', 
-#                     'access': str(refresh.access_token),
-#                     'refresh': str(refresh)
-#                 }, status=status.HTTP_201_CREATED)
-#             except IntegrityError:
-#                 return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
-#             except Exception as e:
-#                 return Response({'error': ['An unexpected error occurred', str(e)]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#         return Response({'error': serializer.errors.get('error', 'Invalid data')}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class SignupViewSet(viewsets.ViewSet):
-#     """
-#     View set to handle user signup.
-#     """
-#     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-#     def signup(self, request):
-#         """
-#         Create a new user and generate a JWT token.
-
-#         Parameters:
-#         - username: The username of the new user.
-#         - email: The email of the new user.
-#         - password: The password of the new user.
-#         - password_confirm: The password confirmation.
-#         - phone_number: The phone number of the new user.
-#         - address: The address of the new user.
-#         - image: The image of the new user.
-
-#         Returns:
-#         - A response indicating success or failure of the signup process.
-#         """
-#         serializer = SignupSerializer(data=request.data)
-#         if serializer.is_valid():
-#             try:
-#                 user = serializer.save()
-#                 # Additional user profile data
-#                 phone_number = serializer.validated_data.get('phone_number')
-#                 address = serializer.validated_data.get('address', '')  # Default to empty string if not provided
-#                 image = serializer.validated_data.get('image', None)
-
-#                 # Create UserProfile
-#                 try:
-#                     UserProfile.objects.create(user=user, phone_number=phone_number, address=address, image=image)
-#                 except Exception as e:
-#                     # Rollback the user creation if profile creation fails
-#                     user.delete()
-#                     return Response({'error': 'Failed to create user profile', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-#                 # Generate a JWT token
-#                 refresh = RefreshToken.for_user(user)
-#                 return Response({'message': 'User registered successfully', 'access': str(refresh.access_token),'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
-#             except IntegrityError:
-#                 return Response({'error': ['Username or email already exists']}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+    
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.

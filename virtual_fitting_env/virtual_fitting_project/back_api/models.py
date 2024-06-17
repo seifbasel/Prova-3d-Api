@@ -14,13 +14,11 @@ class UserProfile(models.Model):
     def __str__(self):
         return str(self.user)
 
-
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
@@ -52,7 +50,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-
 class Favorite(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -64,7 +61,6 @@ class Favorite(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.product.name}"
 
-
 @receiver(post_save, sender=UserProfile)
 def create_cart_for_user_profile(sender, instance, created, **kwargs):
     """
@@ -74,12 +70,10 @@ def create_cart_for_user_profile(sender, instance, created, **kwargs):
         # Create a cart for the user profile
         Cart.objects.create(user=instance)
 
-
 class Cart(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.user)+' '+'cart'
-
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
@@ -91,7 +85,6 @@ class CartItem(models.Model):
     
     def __str__(self):
         return f"Owner: {self.cart.user.user.username}, Product: {self.product.name}"
-
 
 class Order(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -108,7 +101,7 @@ class Order(models.Model):
     def __str__(self):
         return f"Owner: {self.user.user.username}"
 
-    
+
 class Comment(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments')

@@ -171,7 +171,7 @@ class LoginViewSet(viewsets.ViewSet):
                 'refresh': str(refresh)
             }, status=status.HTTP_200_OK)
         else:
-            return Response({'error':['Invalid credentials']}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error':'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 
@@ -197,7 +197,7 @@ class LogoutViewSet(viewsets.ViewSet):
                 token.blacklist()
                 return Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
             except Exception as e:
-                return Response({'error': ['Invalid refresh token']}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

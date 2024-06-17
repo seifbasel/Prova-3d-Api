@@ -1,4 +1,3 @@
-# serializers.py
 from rest_framework import  serializers
 from .models import  UserProfile, Category, Product, Cart, CartItem ,Favorite,Order,Comment
 from django.contrib.auth import get_user_model
@@ -6,13 +5,11 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 
-
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id','user','phone_number','image','address']
         read_only_fields = ['user']
-
 
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)

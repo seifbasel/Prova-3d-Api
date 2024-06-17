@@ -26,7 +26,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
-    path('admin/', admin.site.urls),
+    path('', admin.site.urls),
     path('signup', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('login', LoginViewSet.as_view({'post': 'login'}), name='user-login'),
     path('logout', LogoutViewSet.as_view({'post': 'logout'}), name='logout'),

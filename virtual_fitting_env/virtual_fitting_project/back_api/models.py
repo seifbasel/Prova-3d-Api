@@ -47,8 +47,8 @@ class Product(models.Model):
     size = models.CharField(max_length=10,choices=SIZE_CHOICES)    
     color = models.CharField(max_length=50)
     image = models.ImageField(upload_to='product_images/')
-    lens_id=models.CharField(max_length=200)
-    lens_group_id=models.CharField(max_length=200)
+    lens_id=models.CharField(max_length=200,null=True,blank=True)
+    lens_group_id=models.CharField(max_length=200,null=True,blank=True)
 
     def __str__(self):
         return self.name

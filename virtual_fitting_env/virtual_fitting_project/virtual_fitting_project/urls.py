@@ -2,7 +2,6 @@
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
-    # AllCommentsAPIView,
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     LogoutViewSet,
@@ -39,10 +38,7 @@ urlpatterns = [
     path('cartitem/<int:pk>', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
-    path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
-    # path('all-comments/', AllCommentsAPIView.as_view(), name='all-comments'),
-
-
+    path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail')
 ]
 
 if settings.DEBUG:

@@ -109,10 +109,8 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = '__all__'
 
-
 class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
-
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
@@ -120,7 +118,6 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = '__all__'
-
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:

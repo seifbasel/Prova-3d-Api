@@ -26,7 +26,7 @@ from .models import Comment
 from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 
-        
+
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.
@@ -202,18 +202,18 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         return queryset
 
 
-class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a product by ID.
+# class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     Endpoint to retrieve, update, or delete a product by ID.
 
-    GET: Retrieve a product by ID.
-    PUT: Update a product by ID.
-    PATCH: Partially update a product by ID.
-    DELETE: Delete a product by ID.
-    """
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    permission_classes = [IsAdminUser]  # Restrict access to authenticated users only
+#     GET: Retrieve a product by ID.
+#     PUT: Update a product by ID.
+#     PATCH: Partially update a product by ID.
+#     DELETE: Delete a product by ID.
+#     """
+#     queryset = Product.objects.all()
+#     serializer_class = ProductSerializer
+#     permission_classes = [IsAdminUser]  # Restrict access to authenticated users only
 
 
 # Favorite Endpoints

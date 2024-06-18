@@ -2,7 +2,6 @@
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
-    # AllCommentsAPIView,
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     LogoutViewSet,
@@ -26,7 +25,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
-    path('admin', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('signup', SignupViewSet.as_view({'post': 'signup'}), name='user-signup'),
     path('login', LoginViewSet.as_view({'post': 'login'}), name='user-login'),
     path('logout', LogoutViewSet.as_view({'post': 'logout'}), name='logout'),
@@ -40,8 +39,6 @@ urlpatterns = [
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
     path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
-    # path('all-comments/', AllCommentsAPIView.as_view(), name='all-comments'),
-
 
 ]
 

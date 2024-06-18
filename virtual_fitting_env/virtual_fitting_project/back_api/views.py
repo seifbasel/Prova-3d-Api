@@ -1,6 +1,7 @@
 # views.py
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
+from django.http import HttpResponse
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -25,6 +26,10 @@ from rest_framework import generics
 from .models import Comment
 from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+
+def ping(request):
+    return HttpResponse("pong")
+
 
 
 class SignupViewSet(viewsets.ViewSet):

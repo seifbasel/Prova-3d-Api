@@ -11,7 +11,7 @@ from back_api.views import (
     ProductListCreateAPIView,
     UserProfileRetrieveUpdateAPIView,
     FavoriteListCreateAPIView,FavoriteRetrieveUpdateDestroyAPIView,
-    CheckoutAPIView
+    CheckoutAPIView,ping
     )
 
 from rest_framework_simplejwt.views import (
@@ -39,6 +39,7 @@ urlpatterns = [
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
     path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
+    path('ping/', ping, name='ping'),
 
 ]
 

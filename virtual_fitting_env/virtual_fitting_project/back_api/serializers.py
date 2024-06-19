@@ -60,15 +60,32 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# class CommentSerializer(serializers.ModelSerializer):
+#     user = serializers.ReadOnlyField(source='user.username')
+
+#     class Meta:
+#         model = Comment
+#         fields = ['id', 'text', 'created_at', 'product', 'user','sentiment']
+#         read_only_fields = ['product', 'user','sentiment']
+
+
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
+    author_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'text', 'created_at', 'product', 'user','sentiment']
-        read_only_fields = ['product', 'user','sentiment']
+        fields = ['id', 'text', 'created_at', 'product', 'user', 'sentiment', 'author_image']
+        read_only_fields = ['product', 'user', 'sentiment', 'author_image']
 
-
+    def get_author_image(self, obj):
+        request = self.context.get('request')
+        if request and request.user == obj.user:
+            user_profile = UserProfile.objects.get(user=obj.user)
+            return user_profile.image.url if user_profile.image else None
+        return None
+    
+    
 class ProductSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
 

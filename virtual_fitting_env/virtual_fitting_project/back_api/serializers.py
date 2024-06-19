@@ -8,9 +8,12 @@ from django.core.exceptions import ValidationError
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    user_name = serializers.ReadOnlyField(source='user.username')
+    user_email = serializers.ReadOnlyField(source='user.email')
+
     class Meta:
         model = UserProfile
-        fields = ['id','user','phone_number','image','address']
+        fields = ['id', 'user', 'user_name', 'user_email', 'phone_number', 'image', 'address']
         read_only_fields = ['user']
 
 

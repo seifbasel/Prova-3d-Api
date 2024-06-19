@@ -75,7 +75,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'text', 'created_at', 'product', 'user', 'sentiment', 'author_image']
+        fields = ['id','user','text','sentiment','author_image','created_at']
         read_only_fields = ['product', 'user', 'sentiment', 'author_image']
 
     def get_author_image(self, obj):

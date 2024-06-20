@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.db.models.signals import post_save, post_delete
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -48,10 +48,19 @@ class Product(models.Model):
     image = models.ImageField(upload_to='product_images/')
     lens_id=models.CharField(max_length=200,null=True,blank=True)
     lens_group_id=models.CharField(max_length=200,null=True,blank=True)
+    # rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
 
     def __str__(self):
         return self.name
-
+    
+    # def update_rating(self):
+    #     comments = self.comments.all()
+    #     if comments:
+    #         total_sentiment = sum(comment.sentiment for comment in comments if comment.sentiment is not None)
+    #         self.rating = total_sentiment / comments.count()
+    #     else:
+    #         self.rating = 0
+    #     self.save()
 
 class Favorite(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
@@ -118,3 +127,12 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+    
+    
+# @receiver(post_save, sender=Comment)
+# def update_product_rating_on_save(sender, instance, **kwargs):
+#     instance.product.update_rating()
+
+# @receiver(post_delete, sender=Comment)
+# def update_product_rating_on_delete(sender, instance, **kwargs):
+#     instance.product.update_rating()

@@ -92,9 +92,13 @@ class CommentSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
 
+
     class Meta:
         model = Product
         fields = '__all__'
+        
+        # read_only_fields = ['rating']
+
     
 class FavoriteSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())

@@ -263,7 +263,7 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(
-            {'message': 'Cart item deleted successfully'},
+            {'message': 'Favorite deleted successfully'},
             status=status.HTTP_204_NO_CONTENT
         )
 

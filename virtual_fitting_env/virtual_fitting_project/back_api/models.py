@@ -149,7 +149,6 @@ class review(models.Model):
     
     text = models.TextField()
     sentiment = models.IntegerField(null=True)  # Add sentiment field here
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.text

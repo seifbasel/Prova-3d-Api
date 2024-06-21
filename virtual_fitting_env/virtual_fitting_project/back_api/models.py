@@ -144,3 +144,12 @@ def update_product_rating_on_save(sender, instance, **kwargs):
 @receiver(post_delete, sender=Comment)
 def update_product_rating_on_delete(sender, instance, **kwargs):
     instance.product.update_rating()
+    
+class review(models.Model):
+    
+    text = models.TextField()
+    sentiment = models.IntegerField(null=True)  # Add sentiment field here
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text

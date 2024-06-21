@@ -5,8 +5,8 @@ from django.http import HttpResponse
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order
-from .serializers import (SignupSerializer, UserProfileSerializer, CategorySerializer,
+from .models import UserProfile, Category, Product, Cart, CartItem ,Favorite,Order, review
+from .serializers import (ReviewSerializer, SignupSerializer, UserProfileSerializer, CategorySerializer,
                            ProductSerializer,FavoriteSerializer,
                            CartSerializer, CartItemSerializer,OrderSerializer
                             )
@@ -481,3 +481,21 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
     def get_queryset(self):
         return Comment.objects.filter(user=self.request.user)
+    
+    
+    
+# reviews end point
+class ReviewListCreateAPIView(generics.ListCreateAPIView):
+    """
+    Endpoint to list all reviews or create a new review.
+    """
+    queryset = review.objects.all()
+    serializer_class = ReviewSerializer
+    
+    def perform_create(self, serializer):
+        text = serializer.validated_data.get('text')
+        
+        # Implement your sentiment analysis logic here
+        sentiment = predict_sentiment(text)
+        
+        serializer.save(sentiment=sentiment)

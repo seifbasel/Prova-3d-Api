@@ -1,4 +1,5 @@
 # urls.py
+from django import views
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
@@ -6,6 +7,7 @@ from back_api.views import (
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     LogoutViewSet,
+    ReviewListCreateAPIView,
     SignupViewSet,LoginViewSet,
     CartItemListCreateAPIView,CartItemRetrieveUpdateDestroyAPIView,
     CategoryListCreateAPIView,
@@ -41,6 +43,7 @@ urlpatterns = [
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
     path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
+    path('review', ReviewListCreateAPIView.as_view(), name='review-list-create'),
     path('ping/', ping, name='ping'),
 ]
 

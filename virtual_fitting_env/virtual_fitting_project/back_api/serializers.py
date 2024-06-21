@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import  serializers
-from .models import  UserProfile, Category, Product, Cart, CartItem ,Favorite,Order,Comment
+from .models import  UserProfile, Category, Product, Cart, CartItem ,Favorite,Order,Comment,review
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -155,4 +155,11 @@ class CartSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
+        fields = '__all__'
+        
+        
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = review
         fields = '__all__'

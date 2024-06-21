@@ -320,23 +320,14 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Endpoint to retrieve, update, or delete a cart item by ID.
 
-    GET: Retrieve a cart item by ID.
-    PUT: Update a cart item by ID.
-    PATCH: Partially update a cart item by ID.
-    DELETE: Delete a cart item by ID.
-    """
-    queryset = CartItem.objects.all()
+
+class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
 
     def get_queryset(self):
-        # Get the UserProfile instance associated with the current user
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        # Filter cart items based on the current user's cart
         return CartItem.objects.filter(cart__user=user_profile)
 
     def delete(self, request, *args, **kwargs):
@@ -346,9 +337,36 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
             {'message': 'Cart item deleted successfully'},
             status=status.HTTP_204_NO_CONTENT
         )
+        
+# class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     Endpoint to retrieve, update, or delete a cart item by ID.
 
-    def perform_destroy(self, instance):
-        instance.delete()
+#     GET: Retrieve a cart item by ID.
+#     PUT: Update a cart item by ID.
+#     PATCH: Partially update a cart item by ID.
+#     DELETE: Delete a cart item by ID.
+#     """
+#     queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
+
+#     def get_queryset(self):
+#         # Get the UserProfile instance associated with the current user
+#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
+#         # Filter cart items based on the current user's cart
+#         return CartItem.objects.filter(cart__user=user_profile)
+
+#     def delete(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         self.perform_destroy(instance)
+#         return Response(
+#             {'message': 'Cart item deleted successfully'},
+#             status=status.HTTP_204_NO_CONTENT
+#         )
+
+#     def perform_destroy(self, instance):
+#         instance.delete()
 
 
 class CartTotalAPIView(APIView):

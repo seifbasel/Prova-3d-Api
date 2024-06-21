@@ -48,19 +48,27 @@ class Product(models.Model):
     image = models.ImageField(upload_to='product_images/')
     lens_id=models.CharField(max_length=200,null=True,blank=True)
     lens_group_id=models.CharField(max_length=200,null=True,blank=True)
-    # rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    rating = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name
     
-    # def update_rating(self):
-    #     comments = self.comments.all()
-    #     if comments:
-    #         total_sentiment = sum(comment.sentiment for comment in comments if comment.sentiment is not None)
-    #         self.rating = total_sentiment / comments.count()
-    #     else:
-    #         self.rating = 0
-    #     self.save()
+    def sentiment_to_stars(self, sentiment):
+        """
+        Converts sentiment score to star rating.
+        Assumes sentiment ranges from 0 (negative) to 1 (positive).
+        Maps this to a 1 to 5 star rating.
+        """
+        return int(sentiment * 4 + 1)  # Maps 0 to 1 to 1 to 5
+
+    def update_rating(self):
+        comments = self.comments.all()
+        if comments:
+            total_stars = sum(self.sentiment_to_stars(comment.sentiment) for comment in comments if comment.sentiment is not None)
+            self.rating = round(total_stars / comments.count())
+        else:
+            self.rating = 0
+        self.save()
 
 class Favorite(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
@@ -129,10 +137,10 @@ class Comment(models.Model):
         return self.text
     
     
-# @receiver(post_save, sender=Comment)
-# def update_product_rating_on_save(sender, instance, **kwargs):
-#     instance.product.update_rating()
+@receiver(post_save, sender=Comment)
+def update_product_rating_on_save(sender, instance, **kwargs):
+    instance.product.update_rating()
 
-# @receiver(post_delete, sender=Comment)
-# def update_product_rating_on_delete(sender, instance, **kwargs):
-#     instance.product.update_rating()
+@receiver(post_delete, sender=Comment)
+def update_product_rating_on_delete(sender, instance, **kwargs):
+    instance.product.update_rating()

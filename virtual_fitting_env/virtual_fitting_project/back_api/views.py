@@ -351,6 +351,17 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         instance.delete()
 
 
+class CartTotalAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user_profile = UserProfile.objects.get(user=request.user)
+        cart_items = CartItem.objects.filter(cart__user=user_profile)
+
+        total_price = sum(item.product.price * item.quantity for item in cart_items)
+
+        return Response({'total_price': total_price}, status=200)
+
 # CheckoutEndpoint 
 
 class CheckoutAPIView(APIView):

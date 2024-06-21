@@ -2,6 +2,7 @@
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
+    CartTotalAPIView,
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     LogoutViewSet,
@@ -36,11 +37,11 @@ urlpatterns = [
     path('favorites/<int:pk>', FavoriteRetrieveUpdateDestroyAPIView.as_view(), name='favorite-retrieve-update-destroy'),
     path('cartitem', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
     path('cartitem/<int:pk>', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
+    path('carttotal', CartTotalAPIView.as_view(), name='cart-total'),
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
     path('comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
     path('ping/', ping, name='ping'),
-
 ]
 
 if settings.DEBUG:

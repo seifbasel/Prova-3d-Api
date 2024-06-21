@@ -83,9 +83,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_author_image(self, obj):
         request = self.context.get('request')
-        if request and request.user == obj.user:
-            user_profile = UserProfile.objects.get(user=obj.user)
-            return user_profile.image.url if user_profile.image else None
+        if obj.user.userprofile and obj.user.userprofile.image:
+            return request.build_absolute_uri(obj.user.userprofile.image.url) if request else None
         return None
     
     
@@ -122,7 +121,9 @@ class FavoriteSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['product'] = ProductSerializer(instance.product).data
+        product_representation = ProductSerializer(instance.product, context=self.context).data
+        product_representation['image'] = self.context['request'].build_absolute_uri(instance.product.image.url) if instance.product.image else None
+        representation['product'] = product_representation
         return representation
 
 
@@ -138,10 +139,18 @@ class AddToCartSerializer(serializers.Serializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
-        fields = '__all__'
+        fields = ['id', 'items', 'total_price']  # Adjust fields as per your needs
+        
+    def get_total_price(self, obj):
+        total_price = 0
+        for item in obj.items.all():
+            total_price += item.product.price * item.quantity
+        return total_price
+        
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:

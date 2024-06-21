@@ -261,11 +261,24 @@ class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
-        self.perform_destroy(instance)
+        if instance:
+            self.perform_destroy(instance)
+            return Response(
+                {'message': 'Favorite deleted successfully'},
+                status=status.HTTP_204_NO_CONTENT
+            )
         return Response(
-            {'message': 'Favorite deleted successfully'},
-            status=status.HTTP_204_NO_CONTENT
+            {'error': 'Favorite not found'},
+            status=status.HTTP_404_NOT_FOUND
         )
+        
+    # def delete(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+    #     self.perform_destroy(instance)
+    #     return Response(
+    #         {'message': 'Favorite deleted successfully'},
+    #         status=status.HTTP_204_NO_CONTENT
+    #     )
 
 
 # Cart Endpoints
@@ -318,7 +331,6 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
 
             return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 

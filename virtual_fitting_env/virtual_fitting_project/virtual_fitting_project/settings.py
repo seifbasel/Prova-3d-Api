@@ -84,8 +84,8 @@ DATABASES = {
         'NAME': 'seifdb',
         'USER': 'postgres',
         'PASSWORD': '1234',
-        'HOST': 'localhost',  # Or the hostname of your PostgreSQL server
-        'PORT': '5433',       # The default PostgreSQL port
+        'HOST': 'localhost',  
+        'PORT': '5433',       
     }
 }
 

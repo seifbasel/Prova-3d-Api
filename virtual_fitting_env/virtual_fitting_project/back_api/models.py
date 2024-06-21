@@ -14,13 +14,11 @@ class UserProfile(models.Model):
     def __str__(self):
         return str(self.user)
 
-
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
@@ -52,7 +50,7 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def sentiment_to_stars(self, sentiment):
         """
         Converts sentiment score to star rating.
@@ -77,10 +75,9 @@ class Favorite(models.Model):
 
     class Meta:
         unique_together = ('user', 'product')  # Ensure each user can only have one favorite entry per product
-    
+
     def __str__(self):
         return f"{self.user.username} - {self.product.name}"
-
 
 @receiver(post_save, sender=UserProfile)
 def create_cart_for_user_profile(sender, instance, created, **kwargs):
@@ -91,12 +88,10 @@ def create_cart_for_user_profile(sender, instance, created, **kwargs):
         # Create a cart for the user profile
         Cart.objects.create(user=instance)
 
-
 class Cart(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.user)+' '+'cart'
-
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
@@ -108,7 +103,6 @@ class CartItem(models.Model):
     
     def __str__(self):
         return f"Owner: {self.cart.user.user.username}, Product: {self.product.name}"
-
 
 class Order(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -125,7 +119,6 @@ class Order(models.Model):
     def __str__(self):
         return f"Owner: {self.user.user.username}"
 
-    
 class Comment(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments')
@@ -136,7 +129,6 @@ class Comment(models.Model):
     def __str__(self):
         return self.text
     
-    
 @receiver(post_save, sender=Comment)
 def update_product_rating_on_save(sender, instance, **kwargs):
     instance.product.update_rating()
@@ -144,7 +136,7 @@ def update_product_rating_on_save(sender, instance, **kwargs):
 @receiver(post_delete, sender=Comment)
 def update_product_rating_on_delete(sender, instance, **kwargs):
     instance.product.update_rating()
-    
+
 class review(models.Model):
     
     text = models.TextField()

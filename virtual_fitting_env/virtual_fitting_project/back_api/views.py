@@ -342,19 +342,37 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         user_profile = get_object_or_404(UserProfile, user=self.request.user)
         return CartItem.objects.filter(cart__user=user_profile)
 
+    def get_queryset(self):
+        user_profile = get_object_or_404(UserProfile, user=self.request.user)
+        return CartItem.objects.filter(cart__user=user_profile)
+
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance:
-            self.perform_destroy(instance)
+        # Retrieve the product_id from request data
+        product_id = request.data.get('product_id')
+
+        if product_id is None:
+            return Response(
+                {'error': 'Product ID is required in request data'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get the cart item to delete based on product_id
+        queryset = self.get_queryset()
+        cart_item = queryset.filter(product_id=product_id).first()
+
+        if cart_item:
+            self.perform_destroy(cart_item)
             return Response(
                 {'message': 'Cart item deleted successfully'},
                 status=status.HTTP_204_NO_CONTENT
             )
-        return Response(
-            {'error': 'Cart item not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
+        else:
+            return Response(
+                {'error': 'Cart item not found for the given product ID'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
     # def delete(self, request, *args, **kwargs):
     #     instance = self.get_object()
     #     self.perform_destroy(instance)
@@ -362,7 +380,8 @@ class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     #         {'message': 'Cart item deleted successfully'},
     #         status=status.HTTP_204_NO_CONTENT
     #     )
-        
+
+
 # class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 #     """
 #     Endpoint to retrieve, update, or delete a cart item by ID.

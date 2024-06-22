@@ -207,20 +207,6 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         return queryset
 
 
-# class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-#     """
-#     Endpoint to retrieve, update, or delete a product by ID.
-
-#     GET: Retrieve a product by ID.
-#     PUT: Update a product by ID.
-#     PATCH: Partially update a product by ID.
-#     DELETE: Delete a product by ID.
-#     """
-#     queryset = Product.objects.all()
-#     serializer_class = ProductSerializer
-#     permission_classes = [IsAdminUser]  # Restrict access to authenticated users only
-
-
 # Favorite Endpoints
 
 class FavoriteListCreateAPIView(generics.ListCreateAPIView):
@@ -242,47 +228,29 @@ class FavoriteListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class FavoriteRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+class FavoriteDeleteAPIView(generics.DestroyAPIView):
     """
-    Endpoint to retrieve, update, or delete a favorite product by ID.
+    Endpoint to delete a favorite product using product ID in the request body.
 
-    GET: Retrieve a favorite product by ID.
-    PUT: Update a favorite product by ID.
-    PATCH: Partially update a favorite product by ID.
-    DELETE: Delete a favorite product by ID.
+    DELETE: Delete a favorite product by product ID.
     """
-    queryset = Favorite.objects.all()
-    serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Only allow the authenticated user to access their own favorites
-        return Favorite.objects.filter(user=self.request.user)
-    
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance:
-            self.perform_destroy(instance)
-            return Response(
-                {'message': 'Favorite deleted successfully'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return Response(
-            {'error': 'Favorite not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-        
-    # def delete(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     self.perform_destroy(instance)
-    #     return Response(
-    #         {'message': 'Favorite deleted successfully'},
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the favorite item for the authenticated user and the specified product
+        favorite = get_object_or_404(Favorite, user=request.user, product_id=product_id)
+
+        # Delete the favorite item
+        favorite.delete()
+        return Response({'message': 'Favorite deleted successfully'},status=status.HTTP_204_NO_CONTENT)
+    
 
 
 # Cart Endpoints
-
 class CartItemListCreateAPIView(generics.ListCreateAPIView):
     """
     Endpoint to list all cart items or create a new cart item.
@@ -333,84 +301,25 @@ class CartItemListCreateAPIView(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class CartItemDeleteAPIView(generics.DestroyAPIView):
+    """
+    Endpoint to delete a cart item using product ID in the request body.
 
-class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = CartItemSerializer
+    DELETE: Delete a cart item by product ID.
+    """
     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
 
-    def get_queryset(self):
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        return CartItem.objects.filter(cart__user=user_profile)
-
-    def get_queryset(self):
-        user_profile = get_object_or_404(UserProfile, user=self.request.user)
-        return CartItem.objects.filter(cart__user=user_profile)
-
     def delete(self, request, *args, **kwargs):
-        # Retrieve the product_id from request data
         product_id = request.data.get('product_id')
+        if not product_id:
+            return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if product_id is None:
-            return Response(
-                {'error': 'Product ID is required in request data'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        cart = get_object_or_404(Cart, user=user_profile)
+        cart_item = get_object_or_404(CartItem, cart=cart, product_id=product_id)
 
-        # Get the cart item to delete based on product_id
-        queryset = self.get_queryset()
-        cart_item = queryset.filter(product_id=product_id).first()
-
-        if cart_item:
-            self.perform_destroy(cart_item)
-            return Response(
-                {'message': 'Cart item deleted successfully'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        else:
-            return Response(
-                {'error': 'Cart item not found for the given product ID'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-
-    # def delete(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     self.perform_destroy(instance)
-    #     return Response(
-    #         {'message': 'Cart item deleted successfully'},
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
-
-
-# class CartItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-#     """
-#     Endpoint to retrieve, update, or delete a cart item by ID.
-
-#     GET: Retrieve a cart item by ID.
-#     PUT: Update a cart item by ID.
-#     PATCH: Partially update a cart item by ID.
-#     DELETE: Delete a cart item by ID.
-#     """
-#     queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     permission_classes = [IsAuthenticated]  # Restrict access to authenticated users only
-
-#     def get_queryset(self):
-#         # Get the UserProfile instance associated with the current user
-#         user_profile = get_object_or_404(UserProfile, user=self.request.user)
-#         # Filter cart items based on the current user's cart
-#         return CartItem.objects.filter(cart__user=user_profile)
-
-#     def delete(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         self.perform_destroy(instance)
-#         return Response(
-#             {'message': 'Cart item deleted successfully'},
-#             status=status.HTTP_204_NO_CONTENT
-#         )
-
-#     def perform_destroy(self, instance):
-#         instance.delete()
+        cart_item.delete()
+        return Response({'message': 'Cart item deleted successfully'},status=status.HTTP_204_NO_CONTENT)
 
 
 class CartTotalAPIView(APIView):
@@ -513,26 +422,6 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(product=product, user=self.request.user, sentiment=sentiment)  # Save with sentiment
 
 
-
-# class CommentListCreateAPIView(generics.ListCreateAPIView):
-#     """
-#     Endpoint to list all comments for a product or create a new comment.
-#     """
-#     serializer_class = CommentSerializer
-#     permission_classes = [IsAuthenticatedOrReadOnly]
-
-#     def get_queryset(self):
-#         product_id = self.kwargs['product_id']
-#         return Comment.objects.filter(product_id=product_id)
-
-#     def perform_create(self, serializer):
-#         product_id = self.kwargs['product_id']
-#         product = generics.get_object_or_404(Product, pk=product_id)
-#         serializer.save(product=product, user=self.request.user)
-        
-    # def perform_create(self, serializer):
-    #     serializer.save(user=self.request.user, product_id=self.kwargs['product_id'])
-
 class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
     Endpoint to retrieve, update, or delete a comment by ID.
@@ -543,7 +432,6 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
     def get_queryset(self):
         return Comment.objects.filter(user=self.request.user)
-    
     
     
 # reviews end point

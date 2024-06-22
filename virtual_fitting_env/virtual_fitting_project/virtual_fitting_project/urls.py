@@ -3,17 +3,19 @@ from django import views
 from django.contrib import admin
 from django.urls import path
 from back_api.views import (
+    CartItemDeleteAPIView,
     CartTotalAPIView,
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
+    FavoriteDeleteAPIView,
     LogoutViewSet,
     ReviewListCreateAPIView,
     SignupViewSet,LoginViewSet,
-    CartItemListCreateAPIView,CartItemRetrieveUpdateDestroyAPIView,
+    CartItemListCreateAPIView,
     CategoryListCreateAPIView,
     ProductListCreateAPIView,
     UserProfileRetrieveUpdateAPIView,
-    FavoriteListCreateAPIView,FavoriteRetrieveUpdateDestroyAPIView,
+    FavoriteListCreateAPIView,
     CheckoutAPIView,ping
     )
 
@@ -35,9 +37,9 @@ urlpatterns = [
     path('categories', CategoryListCreateAPIView.as_view(), name='category-list-create'),
     path('products', ProductListCreateAPIView.as_view(), name='product-list-create'),
     path('favorites', FavoriteListCreateAPIView.as_view(), name='favorite-list-create'),    
-    path('favorites/<int:pk>', FavoriteRetrieveUpdateDestroyAPIView.as_view(), name='favorite-retrieve-update-destroy'),
+    path('favorites/delete', FavoriteDeleteAPIView.as_view(), name='favorite-delete'),
     path('cartitem', CartItemListCreateAPIView.as_view(), name='cartitem-list-create'),
-    path('cartitem/<int:pk>', CartItemRetrieveUpdateDestroyAPIView.as_view(), name='cartitem-detail'),
+    path('cartitem/delete', CartItemDeleteAPIView.as_view(), name='cart-item-delete'),
     path('carttotal', CartTotalAPIView.as_view(), name='cart-total'),
     path('checkout', CheckoutAPIView.as_view(), name='checkout'),
     path('products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),

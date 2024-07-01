@@ -44,7 +44,7 @@ class Product(models.Model):
     size = models.CharField(max_length=10,choices=SIZE_CHOICES)    
     color = models.CharField(max_length=50)
     # image = models.ImageField(upload_to='product_images/')
-    image =models.URLField()
+    image =models.CharField()
     lens_id=models.CharField(max_length=200,null=True,blank=True)
     lens_group_id=models.CharField(max_length=200,null=True,blank=True)
     rating = models.IntegerField(default=0)

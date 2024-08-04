@@ -30,8 +30,6 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 def ping(request):
     return HttpResponse("pong")
 
-
-
 class SignupViewSet(viewsets.ViewSet):
     """
     View set to handle user signup.

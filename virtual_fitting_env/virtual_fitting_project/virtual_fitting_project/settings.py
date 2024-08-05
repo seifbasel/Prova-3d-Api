@@ -209,4 +209,6 @@ CACHES = {
 
 # # Password Reset Email Template
 # EMAIL_TEMPLATE_NAME = 'registration/password_reset_email.html'
-CSRF_TRUSTED_ORIGINS = ['https://virtual-fitting.onrender.com']
+
+# CSRF_TRUSTED_ORIGINS = ['https://virtual-fitting.onrender.com']
+

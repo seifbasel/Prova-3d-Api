@@ -53,7 +53,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 
     ]
 
@@ -212,3 +211,7 @@ CACHES = {
 
 # CSRF_TRUSTED_ORIGINS = ['https://virtual-fitting.onrender.com']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://your-domain.com',  # Replace with your actual domain
+    'http://localhost:8000',    # Add local testing origin if necessary
+]

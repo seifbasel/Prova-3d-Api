@@ -180,7 +180,7 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]  # Restrict access to authenticated users only
 
-
+    #searching
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get('name')

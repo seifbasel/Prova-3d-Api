@@ -63,15 +63,6 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class CommentSerializer(serializers.ModelSerializer):
-#     user = serializers.ReadOnlyField(source='user.username')
-
-#     class Meta:
-#         model = Comment
-#         fields = ['id', 'text', 'created_at', 'product', 'user','sentiment']
-#         read_only_fields = ['product', 'user','sentiment']
-
-
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
     author_image = serializers.SerializerMethodField()
@@ -87,17 +78,6 @@ class CommentSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.user.userprofile.image.url) if request else None
         return None
     
-    
-# class ProductSerializer(serializers.ModelSerializer):
-#     comments = CommentSerializer(many=True, read_only=True)
-
-
-#     class Meta:
-#         model = Product
-#         fields = '__all__'
-        
-#         # read_only_fields = ['rating']
-
 
 class ProductSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
@@ -117,33 +97,6 @@ class ProductSerializer(serializers.ModelSerializer):
         representation['image'] = image_url
         return representation
 
-    
-# class FavoriteSerializer(serializers.ModelSerializer):
-#     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
-
-#     class Meta:
-#         model = Favorite
-#         fields = ['id', 'product']
-#         read_only_fields = ['user']
-
-#     def create(self, validated_data):
-#         user = self.context['request'].user
-#         product = validated_data['product']
-
-#         # Check if the favorite already exists for the user and product
-#         if Favorite.objects.filter(user=user, product=product).exists():
-#             raise serializers.ValidationError({"error": "Product already exists in favorites."})
-
-#         # Create the new favorite
-#         validated_data['user'] = user
-#         return super().create(validated_data)
-    
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         product_representation = ProductSerializer(instance.product, context=self.context).data
-#         product_representation['image'] = self.context['request'].build_absolute_uri(instance.product.image.url) if instance.product.image else None
-#         representation['product'] = product_representation
-#         return representation
 
 class FavoriteSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
@@ -178,6 +131,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
         representation['product'] = product_representation
         return representation
 
+
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
 
@@ -207,7 +161,6 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
-        
         
 
 class ReviewSerializer(serializers.ModelSerializer):

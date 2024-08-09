@@ -1,5 +1,5 @@
 # views.py
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, status, viewsets
@@ -10,11 +10,10 @@ from .serializers import (ReviewSerializer, SignupSerializer, UserProfileSeriali
                            ProductSerializer,FavoriteSerializer,
                            CartSerializer, CartItemSerializer,OrderSerializer
                             )
-from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from back_api.permission import IsAdminOrReadOnly 
 from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action

@@ -45,7 +45,6 @@ urlpatterns = [
     path('api/comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
     
     path('api/review', ReviewListCreateAPIView.as_view(), name='review-list-create'),
-    path('ping/', ping, name='ping'),
 ]
 
 if settings.DEBUG:

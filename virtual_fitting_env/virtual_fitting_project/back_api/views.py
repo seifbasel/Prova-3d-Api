@@ -26,8 +26,6 @@ from .models import Comment
 from .serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 
-def ping(request):
-    return HttpResponse("pong")
 
 class SignupViewSet(viewsets.ViewSet):
     """

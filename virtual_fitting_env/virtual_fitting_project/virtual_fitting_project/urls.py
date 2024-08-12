@@ -16,7 +16,7 @@ from back_api.views import (
     ProductListCreateAPIView,
     UserProfileRetrieveUpdateAPIView,
     FavoriteListCreateAPIView,
-    CheckoutAPIView,ping
+    CheckoutAPIView
     )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,

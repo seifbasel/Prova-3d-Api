@@ -44,7 +44,7 @@ urlpatterns = [
     path('api/products/<int:product_id>/comments/', CommentListCreateAPIView.as_view(), name='comment-list-create'),
     path('api/comments/<int:pk>/', CommentRetrieveUpdateDestroyAPIView.as_view(), name='comment-detail'),
     
-    path('review', ReviewListCreateAPIView.as_view(), name='review-list-create'),
+    path('api/review', ReviewListCreateAPIView.as_view(), name='review-list-create'),
     path('ping/', ping, name='ping'),
 ]
 

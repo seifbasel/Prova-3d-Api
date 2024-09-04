@@ -56,7 +56,6 @@ This project is an E-commerce platform that includes both a web application and 
 
 API URL:
 [https://o5l-astute-lyell.circumeo-apps.net/]
-(https://o5l-astute-lyell.circumeo-apps.net/)
 
 ## Try it on android now
 

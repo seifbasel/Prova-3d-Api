@@ -52,15 +52,15 @@ This project is an E-commerce platform that includes both a web application and 
     ```sh
     python manage.py runserver
 
-**Deployment**
+## Deployment
 
 API URL:
 [https://o5l-astute-lyell.circumeo-apps.net/]
 (https://o5l-astute-lyell.circumeo-apps.net/)
 
-**Try it on android now**
+## Try it on android now
 
-android apk is available in the repository.
+Android apk is available in the repository.
 
 ## demo video
-[prova3d-demo](Prova3d-demo.MOV)
+[prova-3d-demo](Prova3d-demo.MOV)

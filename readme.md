@@ -60,4 +60,7 @@ API URL:
 
 **Try it on android now**
 
-the app-release.apk  
+android apk is available in the repository.
+
+## demo video
+[prova3d-demo](Prova3d-demo.MOV)
